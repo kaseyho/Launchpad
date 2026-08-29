@@ -5,19 +5,6 @@ import { createFoundryService, createInitialWorkspace, type FoundryService } fro
 import type { FoundryWorkspace, ServiceFailure, ServiceSuccess, TraceNode } from '../domain/types';
 import { isAbortError, saveWorkspaceSnapshot } from '../persistence/client-workspace';
 
-const DEMO_BRIEF = {
-  problemType: 'product opportunity',
-  problemStatement: 'A mid-market B2B SaaS product loses new administrators during setup. The company cannot increase support headcount and needs an intervention that can ship in six weeks.',
-  targetAudience: 'New administrators at mid-market B2B SaaS customers',
-  desiredOutcome: 'Improve first-session activation',
-  currentBehavior: 'Administrators abandon setup before completing a first valuable action.',
-  constraints: ['Six-week implementation', 'No additional support headcount', 'Use existing product architecture', 'Work for non-technical administrators'],
-  geography: 'Global mid-market accounts',
-  timeframe: 'Six weeks',
-  excludedApproaches: ['Mandatory long-form tutorials', 'Additional live support headcount'],
-  decisionCriteria: ['Evidence strength', 'Activation impact', 'Six-week feasibility', 'Accessibility'],
-};
-
 type AnyResult = ServiceSuccess<unknown> | ServiceFailure;
 type ExportFile = { filename: string; mimeType: string; content: string };
 
@@ -104,17 +91,15 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
   const runPrimaryAction = useCallback(() => {
     const current = controller.getSnapshot();
     if (current.stage === 'EMPTY') {
-      report(service.updateProblemBrief(DEMO_BRIEF));
+      setNotice('Type your problem statement first. LaunchPad does not preload a demo case.');
       return;
     }
     if (current.stage === 'PROBLEM_DEFINED') {
-      report(service.planResearch({ focus: 'first-session activation' }));
+      report(service.planResearch({ focus: current.problemBrief.desiredOutcome || current.problemBrief.problemStatement }));
       return;
     }
     if (current.stage === 'RESEARCH_PLANNED' || (current.stage === 'SOURCING' && current.sources.length === 0)) {
-      for (const lane of ['first_party', 'customer', 'academic', 'market', 'community', 'counter'] as const) {
-        report(service.searchSources({ lane }));
-      }
+      setNotice('Add a relevant source, or ask your WebMCP agent to research and import evidence for this problem.');
       return;
     }
     if (current.stage === 'SOURCING') {
@@ -149,10 +134,10 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
   }, [controller, report, service]);
 
   const primaryActionLabel = (() => {
-    if (workspace.stage === 'EMPTY') return 'LOAD DEMO PROBLEM';
+    if (workspace.stage === 'EMPTY') return 'ENTER YOUR PROBLEM';
     if (workspace.stage === 'PROBLEM_DEFINED') return 'PLAN RESEARCH';
-    if (workspace.stage === 'RESEARCH_PLANNED') return 'SOURCE EVIDENCE';
-    if (workspace.stage === 'SOURCING') return workspace.sources.length ? 'EXTRACT FINDINGS' : 'SOURCE EVIDENCE';
+    if (workspace.stage === 'RESEARCH_PLANNED') return 'ADD FIRST SOURCE';
+    if (workspace.stage === 'SOURCING') return workspace.sources.length ? 'EXTRACT FINDINGS' : 'ADD FIRST SOURCE';
     if (workspace.stage === 'EVIDENCE_REVIEW') return workspace.findings.some((finding) => finding.reviewStatus === 'pending') ? 'ACCEPT ALL EVIDENCE' : 'SYNTHESIZE INSIGHTS';
     if (workspace.stage === 'INSIGHTS_READY') return 'FORGE CANDIDATES';
     if (workspace.stage === 'CANDIDATES_READY') {
@@ -163,6 +148,12 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
     if (workspace.stage === 'STRESS_TESTING') return 'FINALIZE BLUEPRINT';
     return 'BLUEPRINT FINALIZED';
   })();
+
+  const defineProblem = useCallback((problemStatement: string) => {
+    const result = service.updateProblemBrief({ problemStatement }, 'human');
+    report(result);
+    return result.ok;
+  }, [report, service]);
 
   const traceEvidence = useCallback((candidateId: string, componentPath: string) => {
     const result = service.traceEvidence({ candidateId, componentPath }, 'human');
@@ -218,6 +209,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
     traceNodes,
     primaryActionLabel,
     runPrimaryAction,
+    defineProblem,
     report,
     traceEvidence,
     exportBlueprint,

@@ -59,6 +59,23 @@ describe('LaunchPad WebMCP registration', () => {
     expect(result?.content[0]?.text).toContain('Problem brief updated');
     expect(foundry.getWorkspace().stage).toBe('PROBLEM_DEFINED');
     expect(foundry.getWorkspace().activity.at(-1)?.actor).toBe('agent');
+
+    const read = definitions.find((tool) => tool.name === 'get_foundry_state');
+    const state = await read?.execute({});
+    expect(state?.content[0]?.text).toContain('New administrators abandon setup');
+  });
+
+  it('accepts structured, problem-specific candidate proposals from the browser agent', () => {
+    const definitions: WebMCPToolDefinition[] = [];
+    const context: ModelContextLike = { registerTool(definition) { definitions.push(definition); } };
+    const { service } = createInMemoryFoundry();
+    registerFoundryTools(context, service);
+
+    const generate = definitions.find((tool) => tool.name === 'generate_idea_candidates');
+    const proposals = generate?.inputSchema.properties.proposals as { type?: string; maxItems?: number };
+
+    expect(proposals).toMatchObject({ type: 'array', maxItems: 3 });
+    expect(generate?.description).toContain('problem-specific');
   });
 
   it('returns structured, actionable state-gate failures instead of hiding errors', async () => {

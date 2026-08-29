@@ -178,6 +178,24 @@ export interface IdeaCandidate {
   stressTest?: StressTest;
 }
 
+export interface IdeaCandidateProposal {
+  name: string;
+  oneLiner: string;
+  targetUser?: string;
+  problem?: string;
+  mechanism: string;
+  workflow?: string[];
+  features: Array<{ name: string; description: string }>;
+  expectedOutcome?: string;
+  implementationConstraints?: string[];
+  differentiation?: string;
+  assumptions?: Array<{
+    statement: string;
+    importance?: Assumption['importance'];
+    validationMethod?: string;
+  }>;
+}
+
 export interface EvidenceLink {
   id: string;
   candidateId: string;

@@ -6,6 +6,7 @@ import type {
   Finding,
   FoundryWorkspace,
   IdeaCandidate,
+  IdeaCandidateProposal,
   ProblemBrief,
   ServiceFailure,
   ServiceResult,
@@ -66,6 +67,7 @@ export interface FoundryStateSummary {
   title: string;
   stage: FoundryWorkspace['stage'];
   version: number;
+  problemBrief: ProblemBrief;
   counts: {
     researchQuestions: number;
     sources: number;
@@ -103,7 +105,7 @@ export interface FoundryService {
   }, actor?: Actor): ServiceResult<Finding[]>;
   getEvidenceGaps(actor?: Actor): ServiceResult<{ gaps: string[]; warnings: string[] }>;
   synthesizeInsights(input?: Record<string, never>, actor?: Actor): ServiceResult<FoundryWorkspace['insights']>;
-  generateIdeaCandidates(input?: { count?: 1 | 2 | 3 }, actor?: Actor): ServiceResult<IdeaCandidate[]>;
+  generateIdeaCandidates(input?: { count?: 1 | 2 | 3; proposals?: IdeaCandidateProposal[] }, actor?: Actor): ServiceResult<IdeaCandidate[]>;
   inspectCandidate(input: { candidateId: string }, actor?: Actor): ServiceResult<{ candidate: IdeaCandidate; links: FoundryWorkspace['evidenceLinks'] }>;
   stressTestCandidate(input: { candidateId: string }, actor?: Actor): ServiceResult<IdeaCandidate>;
   reviseCandidate(input: {
@@ -130,6 +132,69 @@ function safeTitle(problem: string) {
   const compact = problem.trim().replace(/\s+/g, ' ');
   if (!compact) return 'Untitled problem';
   return compact.length > 48 ? `${compact.slice(0, 45)}…` : compact;
+}
+
+function isCuratedDemoProblem(workspace: FoundryWorkspace) {
+  const problem = workspace.problemBrief.problemStatement.toLowerCase();
+  return problem.includes('new administrators')
+    && (problem.includes('first value') || problem.includes('mid-market b2b saas'));
+}
+
+function createResearchQuestions(brief: ProblemBrief, focus?: string): FoundryWorkspace['researchQuestions'] {
+  const problem = brief.problemStatement.trim();
+  const audience = brief.targetAudience.trim() || 'the people affected by this problem';
+  const outcome = brief.desiredOutcome.trim() || focus?.trim() || 'a measurable improvement';
+  const querySeed = problem.replace(/[^a-zA-Z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+  const timeframe = brief.timeframe.trim() || 'Most recent relevant period';
+
+  return RESEARCH_QUESTION_TEMPLATES.map((template) => {
+    const tailored = {
+      first_party: {
+        question: `What first-party behavior shows that “${problem}” is happening?`,
+        purpose: 'Measure the problem before proposing a solution.',
+        query: `${querySeed} behavioral data baseline`,
+      },
+      customer: {
+        question: `How does ${audience} describe the problem, its causes, and current workarounds?`,
+        purpose: 'Capture direct needs, language, and coping behavior.',
+        query: `${querySeed} user interviews workarounds`,
+      },
+      academic: {
+        question: `Which credible mechanisms could explain this problem or support ${outcome}?`,
+        purpose: 'Find transferable causal or behavioral mechanisms.',
+        query: `${querySeed} research mechanism intervention`,
+      },
+      market: {
+        question: 'Which existing products, services, or standards address the same underlying need?',
+        purpose: 'Map alternatives and reusable constraints.',
+        query: `${querySeed} existing solutions standards`,
+      },
+      community: {
+        question: `What weak but recent signals are people sharing about this problem?`,
+        purpose: 'Collect emerging language without treating anecdotes as prevalence.',
+        query: `${querySeed} experiences discussion`,
+      },
+      counter: {
+        question: `What evidence contradicts the current framing or warns against the obvious solution?`,
+        purpose: 'Attack the problem framing before committing to an intervention.',
+        query: `${querySeed} counter evidence failure unintended consequences`,
+      },
+      alternatives: {
+        question: 'What alternatives already compete for this job?',
+        purpose: 'Understand substitution and differentiation.',
+        query: `${querySeed} alternatives`,
+      },
+    }[template.lane];
+
+    return {
+      ...clone(template),
+      question: tailored.question,
+      purpose: tailored.purpose,
+      timeframe,
+      query: tailored.query,
+      status: 'planned' as const,
+    };
+  });
 }
 
 function hashText(value: string) {
@@ -213,6 +278,180 @@ function evidenceGapSnapshot(workspace: FoundryWorkspace) {
   if (reviewed.some((finding) => finding.synthetic)) warnings.push('Synthetic first-party evidence is clearly labeled and must be replaced for a real decision.');
 
   return { gaps, warnings };
+}
+
+function summarizeFindings(findings: Finding[]) {
+  return findings.slice(0, 2).map((finding) => finding.normalizedClaim).join(' ');
+}
+
+function createCustomInsights(workspace: FoundryWorkspace): FoundryWorkspace['insights'] {
+  const reviewed = workspace.findings.filter(accepted);
+  const counter = reviewed.filter((finding) => finding.evidenceType === 'counter_evidence');
+  const groups = [
+    {
+      id: 'insight-observed',
+      title: 'Direct evidence defines the problem',
+      findingTypes: ['first_party_behavioral', 'primary_user_evidence'],
+      fallback: 'Direct observations establish what is happening before a solution is proposed.',
+    },
+    {
+      id: 'insight-mechanism',
+      title: 'Mechanisms worth translating',
+      findingTypes: ['primary_research', 'secondary_research', 'expert_opinion'],
+      fallback: 'Research and expert evidence suggest mechanisms that may transfer into an intervention.',
+    },
+    {
+      id: 'insight-market',
+      title: 'Signals outside the immediate sample',
+      findingTypes: ['market_signal', 'competitor_evidence', 'community_anecdote'],
+      fallback: 'Market and community signals reveal alternatives and emerging expectations without proving prevalence.',
+    },
+    {
+      id: 'insight-hypothesis',
+      title: 'Assumptions remain visible',
+      findingTypes: ['derived_calculation', 'hypothesis'],
+      fallback: 'Unproven claims remain explicit hypotheses to test rather than hidden facts.',
+    },
+  ];
+
+  const insights: FoundryWorkspace['insights'] = groups.flatMap((group) => {
+    const findings = reviewed.filter((finding) => group.findingTypes.includes(finding.evidenceType));
+    if (!findings.length) return [];
+    return [{
+      id: group.id,
+      title: group.title,
+      summary: summarizeFindings(findings) || group.fallback,
+      findingIds: findings.map((finding) => finding.id),
+      contradictionIds: [],
+    }];
+  });
+
+  if (counter.length) {
+    insights.push({
+      id: 'insight-contradiction',
+      title: 'Contradictions shape the test',
+      summary: summarizeFindings(counter),
+      findingIds: [],
+      contradictionIds: counter.map((finding) => finding.id),
+    });
+  }
+
+  const linked = new Set(insights.flatMap((insight) => insight.findingIds));
+  const ungrouped = reviewed.filter((finding) => finding.evidenceType !== 'counter_evidence' && !linked.has(finding.id));
+  if (ungrouped.length) {
+    insights.push({
+      id: 'insight-other',
+      title: 'Additional evidence changes the frame',
+      summary: summarizeFindings(ungrouped),
+      findingIds: ungrouped.map((finding) => finding.id),
+      contradictionIds: [],
+    });
+  }
+
+  return insights;
+}
+
+function createCustomCandidateFixtures(
+  workspace: FoundryWorkspace,
+  count: 1 | 2 | 3,
+  proposals: IdeaCandidateProposal[] = [],
+): { candidates: IdeaCandidate[]; links: FoundryWorkspace['evidenceLinks'] } {
+  const brief = workspace.problemBrief;
+  const target = brief.targetAudience || 'People most affected by the problem';
+  const outcome = brief.desiredOutcome || 'Improve the target behavior measurably';
+  const constraints = brief.constraints.length ? brief.constraints : ['Start with a reversible pilot', 'Measure before scaling'];
+  const defaults: IdeaCandidateProposal[] = [
+    {
+      name: 'Friction-First Pilot',
+      oneLiner: `A focused intervention that removes the most evidenced barrier to ${outcome.toLowerCase()}.`,
+      mechanism: 'Use the strongest direct signal to target one high-friction moment, then measure the behavioral change.',
+      workflow: ['Identify the evidenced friction', 'Deliver targeted support at that moment', 'Measure the before-and-after behavior'],
+      features: [
+        { name: 'Signal trigger', description: 'Detect the behavior or condition most closely tied to the problem.' },
+        { name: 'Contextual intervention', description: 'Respond at the moment the evidence says help is needed.' },
+        { name: 'Outcome ledger', description: 'Show whether the target behavior changes after the intervention.' },
+      ],
+      differentiation: 'Starts from the strongest observed failure point rather than a broad feature list.',
+    },
+    {
+      name: 'Guided Proof Loop',
+      oneLiner: `A progressive workflow that helps ${target.toLowerCase()} reach a visible result before asking for more effort.`,
+      mechanism: 'Translate credible mechanisms into small guided steps while preserving user control and an explicit exit.',
+      workflow: ['Preview the intended outcome', 'Complete one guided step', 'Inspect the result', 'Continue or exit'],
+      features: [
+        { name: 'Outcome preview', description: 'Make the intended result concrete before the user commits more effort.' },
+        { name: 'Adaptive guidance', description: 'Reveal only the help needed for the current step.' },
+        { name: 'User control', description: 'Let experienced users skip, revise, or leave the guided path.' },
+      ],
+      differentiation: 'Combines evidence-backed guidance with an explicit control and recovery path.',
+    },
+    {
+      name: 'Assumption-Safe Trial',
+      oneLiner: `A low-cost field test that turns the riskiest belief behind this problem into a measurable decision.`,
+      mechanism: 'Separate observed facts from assumptions, then test the assumption most likely to invalidate the idea.',
+      workflow: ['Rank assumptions', 'Prototype the smallest intervention', 'Run with the target audience', 'Keep, revise, or stop'],
+      features: [
+        { name: 'Assumption map', description: 'Rank what must be true by importance and current evidence.' },
+        { name: 'Smallest test', description: 'Define a reversible experiment around the critical assumption.' },
+        { name: 'Decision gate', description: 'Predefine the evidence that causes the team to proceed, revise, or stop.' },
+      ],
+      differentiation: 'Optimizes for learning quality before implementation scope.',
+    },
+  ];
+  const selectedProposals = (proposals.length ? proposals : defaults).slice(0, count);
+  const candidates: IdeaCandidate[] = selectedProposals.map((proposal, index) => ({
+    id: `candidate-${String.fromCharCode(97 + index)}`,
+    name: proposal.name.trim(),
+    oneLiner: proposal.oneLiner.trim(),
+    targetUser: proposal.targetUser?.trim() || target,
+    problem: proposal.problem?.trim() || brief.problemStatement,
+    mechanism: proposal.mechanism.trim(),
+    workflow: proposal.workflow?.map((step) => step.trim()).filter(Boolean) || ['Run a focused pilot', 'Measure the target behavior', 'Revise from the result'],
+    features: proposal.features.slice(0, 4).map((feature, featureIndex) => ({
+      id: `candidate-${index + 1}-feature-${featureIndex + 1}`,
+      name: feature.name.trim(),
+      description: feature.description.trim(),
+    })),
+    expectedOutcome: proposal.expectedOutcome?.trim() || outcome,
+    implementationConstraints: [...new Set([...(proposal.implementationConstraints ?? []), ...constraints])],
+    differentiation: proposal.differentiation?.trim() || 'Keeps the intervention tied to accepted evidence and an explicit validation gate.',
+    assumptions: (proposal.assumptions?.length ? proposal.assumptions : [{
+      statement: `The proposed mechanism can materially change ${outcome.toLowerCase()}.`,
+      importance: 'critical' as const,
+      validationMethod: 'Run the smallest representative test with the target audience.',
+    }]).map((assumption, assumptionIndex) => ({
+      id: `candidate-${index + 1}-assumption-${assumptionIndex + 1}`,
+      statement: assumption.statement.trim(),
+      importance: assumption.importance ?? 'high',
+      evidenceStatus: 'partial' as const,
+      validationMethod: assumption.validationMethod?.trim() || 'Test with the target audience before scaling.',
+    })),
+    coverage: 0,
+    score: 0,
+    noveltyBonus: [12, 8, 5][index] ?? 4,
+    unsupportedComponents: [],
+    status: 'candidate' as const,
+  }));
+
+  const supportFindings = workspace.findings.filter((finding) => accepted(finding) && finding.evidenceType !== 'counter_evidence');
+  const links = candidates.flatMap((candidate, candidateIndex) => {
+    const paths = ['mechanism', ...candidate.features.map((_, index) => `features.${index}`)];
+    return paths.map((componentPath, componentIndex) => {
+      const finding = supportFindings[(candidateIndex + componentIndex) % supportFindings.length];
+      const insight = workspace.insights.find((item) => item.findingIds.includes(finding.id)) ?? workspace.insights[0];
+      return {
+        id: `evidence-link-custom-${candidateIndex + 1}-${componentIndex + 1}`,
+        candidateId: candidate.id,
+        componentPath,
+        insightId: insight.id,
+        findingId: finding.id,
+        relationshipType: 'supports' as const,
+        explanation: `This component is grounded in accepted evidence: ${finding.normalizedClaim}`,
+      };
+    });
+  });
+
+  return { candidates, links };
 }
 
 function markdownForBlueprint(workspace: FoundryWorkspace, blueprint: Blueprint, includePrivate = false) {
@@ -346,6 +585,7 @@ export function createFoundryService(
         title: next.title,
         stage: next.stage,
         version: next.version + 1,
+        problemBrief: clone(next.problemBrief),
         counts: {
           researchQuestions: next.researchQuestions.length,
           sources: next.sources.length,
@@ -367,6 +607,18 @@ export function createFoundryService(
         return fail('update_problem_brief', actor, 'INVALID_PROBLEM_BRIEF', 'A non-empty problem statement is required.');
       }
       return commit('update_problem_brief', 'Updated structured problem fields.', 'Problem brief updated and the refinery is ready.', actor, (workspace) => {
+        const problemChanged = Boolean(workspace.problemBrief.problemStatement.trim())
+          && workspace.problemBrief.problemStatement.trim() !== problemStatement;
+        if (problemChanged) {
+          workspace.researchQuestions = [];
+          workspace.sources = [];
+          workspace.findings = [];
+          workspace.insights = [];
+          workspace.candidates = [];
+          workspace.evidenceLinks = [];
+          workspace.selectedCandidateId = undefined;
+          workspace.blueprint = undefined;
+        }
         workspace.problemBrief = {
           ...workspace.problemBrief,
           ...input,
@@ -376,9 +628,9 @@ export function createFoundryService(
           decisionCriteria: input.decisionCriteria ? [...new Set(input.decisionCriteria)] : workspace.problemBrief.decisionCriteria,
         };
         workspace.problemBrief.openQuestions = [
-          'Which setup stage creates the largest drop?',
-          'What event represents first value for an administrator?',
-          'Do failures come from complexity, trust, missing access, or missing information?',
+          'Who experiences this problem most acutely, and in what situation?',
+          'What observable behavior confirms the problem today?',
+          'Which constraints determine whether an intervention is viable?',
         ];
         workspace.title = safeTitle(problemStatement);
         workspace.stage = 'PROBLEM_DEFINED';
@@ -393,7 +645,7 @@ export function createFoundryService(
       }
       return commit('plan_research', `Planned research${input.focus ? ` for ${input.focus}` : ''}.`, 'Six source-lane questions are ready.', actor, (next) => {
         const existing = new Set(next.researchQuestions.map((question) => question.id));
-        for (const question of RESEARCH_QUESTION_TEMPLATES) {
+        for (const question of createResearchQuestions(next.problemBrief, input.focus)) {
           if (!existing.has(question.id)) next.researchQuestions.push(clone(question));
         }
         next.stage = 'RESEARCH_PLANNED';
@@ -406,14 +658,19 @@ export function createFoundryService(
       if (workspace.researchQuestions.length === 0) {
         return fail('search_sources', actor, 'RESEARCH_PLAN_REQUIRED', 'Create a research plan before searching a source lane.');
       }
-      const fixtures = DEMO_FIXTURES.filter((fixture) => fixture.source.lane === input.lane);
-      return commit('search_sources', `Searched the ${input.lane} lane${input.query ? ` for ${input.query}` : ''}.`, `${fixtures.length} curated source records are available in the ${input.lane} lane.`, actor, (next) => {
+      const fixtures = isCuratedDemoProblem(workspace)
+        ? DEMO_FIXTURES.filter((fixture) => fixture.source.lane === input.lane)
+        : [];
+      const outputSummary = fixtures.length
+        ? `${fixtures.length} curated source records are available in the ${input.lane} lane.`
+        : `No connected ${input.lane} records were available. The research question remains open for browser research and import_source.`;
+      return commit('search_sources', `Searched the ${input.lane} lane${input.query ? ` for ${input.query}` : ''}.`, outputSummary, actor, (next) => {
         const existing = new Set(next.sources.map((source) => source.id));
         for (const fixture of fixtures) {
           if (!existing.has(fixture.source.id)) next.sources.push(clone(fixture.source));
         }
         const question = next.researchQuestions.find((item) => item.lane === input.lane);
-        if (question) question.status = 'complete';
+        if (question) question.status = fixtures.length ? 'complete' : 'searching';
         next.stage = 'SOURCING';
         return fixtures.map((fixture) => next.sources.find((source) => source.id === fixture.source.id)!);
       }, (items) => items.map((source) => source.id));
@@ -496,11 +753,29 @@ export function createFoundryService(
             if (excerpt) {
               const findingId = `finding-${hashText(`${sourceId}|${excerpt}`)}`;
               if (!existing.has(findingId)) {
+                const percentage = excerpt.match(/\b(\d+(?:\.\d+)?)\s*(?:%|percent\b)/i);
+                const evidenceType: EvidenceType = source.lane === 'counter'
+                  ? 'counter_evidence'
+                  : source.sourceType === 'analytics'
+                    ? 'first_party_behavioral'
+                    : source.sourceType === 'customer' || source.sourceType === 'internal'
+                      ? 'primary_user_evidence'
+                      : source.sourceType === 'paper'
+                        ? 'primary_research'
+                        : source.sourceType === 'report'
+                          ? 'secondary_research'
+                          : source.sourceType === 'community'
+                            ? 'community_anecdote'
+                            : source.sourceType === 'competitor'
+                              ? 'competitor_evidence'
+                              : 'hypothesis';
                 next.findings.push({
                   id: findingId,
                   sourceId,
                   normalizedClaim: excerpt.length > 180 ? `${excerpt.slice(0, 177)}…` : excerpt,
-                  evidenceType: source.sourceType === 'analytics' ? 'first_party_behavioral' : source.sourceType === 'customer' ? 'primary_user_evidence' : 'hypothesis',
+                  evidenceType,
+                  value: percentage ? Number(percentage[1]) : undefined,
+                  unit: percentage ? 'percent' : undefined,
                   population: 'Not supplied',
                   geography: 'Not supplied',
                   timeframe: source.publishedAt,
@@ -573,6 +848,11 @@ export function createFoundryService(
         return fail('synthesize_insights', actor, 'INSUFFICIENT_EVIDENCE', 'At least 4 accepted findings are required before synthesis.', { required: { acceptedFindings: 4 }, current: { acceptedFindings: reviewed.length } });
       }
       return commit('synthesize_insights', 'Clustered accepted findings by underlying pattern.', 'Four inspectable insight modules assembled.', actor, (next) => {
+        if (!isCuratedDemoProblem(next)) {
+          next.insights = createCustomInsights(next);
+          next.stage = 'INSIGHTS_READY';
+          return next.insights;
+        }
         const allowed = new Set(next.findings.filter(accepted).map((finding) => finding.id));
         const cluster = (id: string, title: string, summary: string, findingIds: string[], contradictionIds: string[] = []) => ({
           id, title, summary,
@@ -604,9 +884,22 @@ export function createFoundryService(
       if (workspace.insights.length === 0) {
         return fail('generate_idea_candidates', actor, 'INSIGHTS_REQUIRED', 'Synthesize accepted evidence into insights before generating candidates.');
       }
-      const count = input.count ?? 3;
+      if (input.proposals?.some((proposal) => (
+        !proposal.name?.trim()
+        || !proposal.oneLiner?.trim()
+        || !proposal.mechanism?.trim()
+        || !proposal.features?.length
+        || proposal.features.some((feature) => !feature.name?.trim() || !feature.description?.trim())
+      ))) {
+        return fail('generate_idea_candidates', actor, 'INVALID_CANDIDATE_PROPOSAL', 'Every proposed candidate needs a name, one-line proposition, mechanism, and at least one complete feature.');
+      }
+      const count = input.proposals?.length
+        ? Math.min(3, input.proposals.length) as 1 | 2 | 3
+        : input.count ?? 3;
       return commit('generate_idea_candidates', `Generated ${count} candidates from accepted insights.`, `${count} evidence-linked blueprints populated the idea forge.`, actor, (next) => {
-        const fixtures = createCandidateFixtures();
+        const fixtures = isCuratedDemoProblem(next) && !input.proposals?.length
+          ? createCandidateFixtures()
+          : createCustomCandidateFixtures(next, count, input.proposals);
         next.candidates = fixtures.candidates.slice(0, count);
         const candidateIds = new Set(next.candidates.map((candidate) => candidate.id));
         next.evidenceLinks = fixtures.links.filter((link) => candidateIds.has(link.candidateId));
@@ -631,15 +924,24 @@ export function createFoundryService(
       const counterIds = getWorkspace().findings.filter((finding) => finding.evidenceType === 'counter_evidence' && accepted(finding)).map((finding) => finding.id);
       if (counterIds.length === 0) return fail('stress_test_candidate', actor, 'COUNTER_EVIDENCE_REQUIRED', 'Search and accept at least one counter-evidence finding before stress testing.');
       return commit('stress_test_candidate', `Attacked ${candidate.name} with contradictions and adoption risks.`, 'Stress chamber recorded counter-evidence, assumptions, and feasibility risks.', actor, (workspace) => {
+        const customProblem = !isCuratedDemoProblem(workspace);
+        const counterFindings = workspace.findings.filter((finding) => counterIds.includes(finding.id));
+        const evidenceCaveats = workspace.findings.filter(accepted).flatMap((finding) => finding.caveats).slice(0, 3);
         workspace.candidates = workspace.candidates.map((item) => item.id === input.candidateId ? {
           ...item,
           status: 'stress_tested',
           stressTest: {
             completedAt: now(),
             counterEvidenceIds: counterIds,
-            adoptionRisks: ['Experienced administrators may reject guidance that feels mandatory.', 'A preview may be distrusted if it differs from production data.'],
-            feasibilityRisks: ['Safe sample-data rendering must fit the existing architecture.', 'Credential validation must avoid exposing secrets.'],
-            populationWarnings: ['Learning research is mechanism evidence, not a direct SaaS activation study.'],
+            adoptionRisks: customProblem
+              ? counterFindings.map((finding) => finding.normalizedClaim).slice(0, 2)
+              : ['Experienced administrators may reject guidance that feels mandatory.', 'A preview may be distrusted if it differs from production data.'],
+            feasibilityRisks: customProblem
+              ? (workspace.problemBrief.constraints.length ? workspace.problemBrief.constraints : ['The intervention must remain small enough to test before scaling.'])
+              : ['Safe sample-data rendering must fit the existing architecture.', 'Credential validation must avoid exposing secrets.'],
+            populationWarnings: customProblem
+              ? (evidenceCaveats.length ? evidenceCaveats : ['Available evidence may not represent every affected user or context.'])
+              : ['Learning research is mechanism evidence, not a direct SaaS activation study.'],
           },
         } : item);
         workspace.selectedCandidateId = input.candidateId;
@@ -705,7 +1007,7 @@ export function createFoundryService(
       if (gaps.gaps.length) return fail('finalize_blueprint', actor, 'QUALITY_GATE_FAILED', gaps.gaps.join(' '));
       if (candidate.unsupportedComponents.length) return fail('finalize_blueprint', actor, 'UNSUPPORTED_COMPONENTS', `Link evidence to: ${candidate.unsupportedComponents.join(', ')}.`);
 
-      const validationPlan: ValidationPlan = {
+      const validationPlan: ValidationPlan = isCuratedDemoProblem(workspace) ? {
         hypothesis: 'Showing an outcome preview before minimum configuration will increase first-session activation for new administrators without increasing support contacts.',
         targetParticipant: '24 newly assigned administrators from mid-market customer accounts, stratified by prior integration experience.',
         intervention: 'Clickable prototype of the First-Value Flightpath versus the current setup sequence.',
@@ -713,6 +1015,14 @@ export function createFoundryService(
         failureThreshold: 'Less than a 5 percentage-point activation difference, or more critical setup errors than the current flow.',
         expectedDuration: 'Two weeks, including prototype testing and one instrumented pilot cohort.',
         evidenceThatChangesRecommendation: 'No activation lift, expert users cannot exit cleanly, or sample-data previews materially reduce trust.',
+      } : {
+        hypothesis: `If ${candidate.mechanism.charAt(0).toLowerCase()}${candidate.mechanism.slice(1)}, then ${workspace.problemBrief.desiredOutcome || 'the target behavior will improve'} for ${workspace.problemBrief.targetAudience || 'the affected audience'}.`,
+        targetParticipant: workspace.problemBrief.targetAudience || 'A small representative sample of the people most affected by the problem.',
+        intervention: `A testable prototype of ${candidate.name} focused on its highest-evidence feature.`,
+        successMetric: `A pre-registered, observable improvement in ${workspace.problemBrief.desiredOutcome || 'the target behavior'} compared with the current baseline.`,
+        failureThreshold: 'No meaningful improvement, a material increase in errors or burden, or evidence that the mechanism does not fit the target audience.',
+        expectedDuration: workspace.problemBrief.timeframe || 'Two weeks for a prototype test and one measured pilot.',
+        evidenceThatChangesRecommendation: 'A failed target metric, stronger counter-evidence, or a critical assumption disproven by the pilot.',
       };
 
       return commit('finalize_blueprint', `Finalized ${candidate.name}.`, 'Proof-carrying idea blueprint locked with proof, caveats, assumptions, and the next test.', actor, (next) => {

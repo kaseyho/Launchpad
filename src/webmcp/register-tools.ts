@@ -1,5 +1,5 @@
 import type { FoundryService } from '../domain/foundry-service';
-import type { EvidenceType, ProblemBrief, ServiceResult, Source, SourceLane, TraceNode } from '../domain/types';
+import type { EvidenceType, IdeaCandidateProposal, ProblemBrief, ServiceResult, Source, SourceLane, TraceNode } from '../domain/types';
 
 export const WEBMCP_TOOL_COUNT = 16;
 
@@ -81,7 +81,7 @@ export function getFoundryToolDefinitions(
   return [
     {
       name: 'get_foundry_state',
-      description: 'Read the active LaunchPad stage, record counts, quality warnings, and selected candidate. This only records an audit event and does not change research decisions.',
+      description: 'Read the user-authored problem brief, active LaunchPad stage, record counts, quality warnings, and selected candidate. Call this first so every later action uses the human’s actual problem. This only records an audit event and does not change research decisions.',
       inputSchema: emptySchema(),
       annotations: { readOnlyHint: true },
       execute: () => toolResult(service.getFoundryState('agent')),
@@ -122,7 +122,7 @@ export function getFoundryToolDefinitions(
     },
     {
       name: 'search_sources',
-      description: 'Search one approved source lane for the active research plan. This adds deduplicated source crates to the live factory.',
+      description: 'Search one connected source lane for the active research plan. Connected results become deduplicated source crates; when no adapter results exist, the question stays open and the agent should use browser research followed by import_source.',
       inputSchema: objectSchema({
         lane: stringProperty('Single source lane to search.', lanes),
         query: stringProperty('Optional narrow query for this lane.'),
@@ -188,9 +188,82 @@ export function getFoundryToolDefinitions(
     },
     {
       name: 'generate_idea_candidates',
-      description: 'Generate one to three evidence-linked idea candidates from accepted findings and constraints. This populates the visible candidate forge.',
-      inputSchema: objectSchema({ count: { type: 'integer', enum: [1, 2, 3], minimum: 1, maximum: 3, description: 'Number of candidates to create.' } }),
-      execute: (input) => toolResult(service.generateIdeaCandidates({ count: input.count as 1 | 2 | 3 | undefined }, 'agent')),
+      description: 'Create one to three problem-specific, evidence-linked candidates from accepted findings and constraints. An agent should pass its structured candidate proposals so LaunchPad can validate, store, score, and render them in the visible forge.',
+      inputSchema: objectSchema({
+        count: { type: 'integer', enum: [1, 2, 3], minimum: 1, maximum: 3, description: 'Number of candidates to create when structured proposals are omitted.' },
+        proposals: {
+          type: 'array',
+          description: 'One to three problem-specific candidate proposals derived from the accepted evidence.',
+          minItems: 1,
+          maxItems: 3,
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['name', 'one_liner', 'mechanism', 'features'],
+            properties: {
+              name: { type: 'string', description: 'Memorable candidate name.' },
+              one_liner: { type: 'string', description: 'One-sentence proposition.' },
+              target_user: { type: 'string', description: 'Specific target user; defaults to the active brief.' },
+              problem: { type: 'string', description: 'Problem addressed; defaults to the active problem statement.' },
+              mechanism: { type: 'string', description: 'Why this intervention may work.' },
+              workflow: { type: 'array', items: { type: 'string' }, description: 'Ordered user workflow.' },
+              features: {
+                type: 'array',
+                minItems: 1,
+                maxItems: 4,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['name', 'description'],
+                  properties: {
+                    name: { type: 'string' },
+                    description: { type: 'string' },
+                  },
+                },
+              },
+              expected_outcome: { type: 'string' },
+              implementation_constraints: { type: 'array', items: { type: 'string' } },
+              differentiation: { type: 'string' },
+              assumptions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['statement'],
+                  properties: {
+                    statement: { type: 'string' },
+                    importance: { type: 'string', enum: ['critical', 'high', 'medium'] },
+                    validation_method: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      execute: (input) => {
+        const proposals = (input.proposals as Array<Record<string, unknown>> | undefined)?.map((proposal) => ({
+          name: proposal.name as string,
+          oneLiner: proposal.one_liner as string,
+          targetUser: proposal.target_user as string | undefined,
+          problem: proposal.problem as string | undefined,
+          mechanism: proposal.mechanism as string,
+          workflow: proposal.workflow as string[] | undefined,
+          features: proposal.features as IdeaCandidateProposal['features'],
+          expectedOutcome: proposal.expected_outcome as string | undefined,
+          implementationConstraints: proposal.implementation_constraints as string[] | undefined,
+          differentiation: proposal.differentiation as string | undefined,
+          assumptions: (proposal.assumptions as Array<Record<string, unknown>> | undefined)?.map((assumption) => ({
+            statement: assumption.statement as string,
+            importance: assumption.importance as 'critical' | 'high' | 'medium' | undefined,
+            validationMethod: assumption.validation_method as string | undefined,
+          })),
+        }));
+        return toolResult(service.generateIdeaCandidates({
+          count: input.count as 1 | 2 | 3 | undefined,
+          proposals,
+        }, 'agent'));
+      },
     },
     {
       name: 'inspect_candidate',

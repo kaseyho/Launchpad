@@ -74,6 +74,14 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
     window.setTimeout(() => artifactButtonRef.current?.focus(), 0);
   }, []);
 
+  const runPrimaryAction = useCallback(() => {
+    if (workspace.stage === 'RESEARCH_PLANNED' || (workspace.stage === 'SOURCING' && workspace.sources.length === 0)) {
+      setSourceDialogOpen(true);
+      return;
+    }
+    foundry.runPrimaryAction();
+  }, [foundry, workspace.sources.length, workspace.stage]);
+
   const workbench = workspace.stage === 'FINALIZED' && workspace.blueprint ? (
     <BlueprintView workspace={workspace} traceNodes={foundry.traceNodes} onTrace={foundry.traceEvidence} onExport={foundry.exportBlueprint} />
   ) : workspace.candidates.length > 0 ? (
@@ -129,7 +137,8 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
         <LaunchBrief
           workspace={workspace}
           primaryActionLabel={foundry.primaryActionLabel}
-          onPrimaryAction={foundry.runPrimaryAction}
+          onPrimaryAction={runPrimaryAction}
+          onDefineProblem={foundry.defineProblem}
           onInspectEvidence={() => setInspectorOpen(true)}
           onAddSource={() => setSourceDialogOpen(true)}
           onEditProblem={() => setProblemDialogOpen(true)}

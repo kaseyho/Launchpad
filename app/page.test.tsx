@@ -10,8 +10,10 @@ describe('LaunchPad first product slice', () => {
     expect(screen.getByRole('region', { name: /problem brief/i })).toBeVisible();
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toBeVisible();
     expect(screen.getByRole('complementary', { name: /webmcp agent run/i })).toHaveTextContent(/This page changes/);
-    expect(screen.getByRole('button', { name: /load demo problem/i })).toBeEnabled();
-    expect(screen.getByText(/manual preview/i)).toBeVisible();
+    expect(screen.getByRole('textbox', { name: /your problem statement/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /start with my problem/i })).toBeEnabled();
+    expect(screen.getByText(/no api key required/i)).toBeVisible();
+    expect(screen.getByText(/open in a webmcp browser/i)).toBeVisible();
     expect(screen.getByRole('button', { name: /activity/i })).toHaveAttribute('aria-expanded', 'false');
   });
 });
