@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from 'next/font/google';
+import { SiteHead } from './site-head';
 import { metadata } from './site-metadata';
 import './globals.css';
 
@@ -21,6 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head><SiteHead /></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

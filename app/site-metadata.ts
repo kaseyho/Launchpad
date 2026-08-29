@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 
+export const PUBLIC_SITE_URL = 'https://proof-foundry.hello18528.chatgpt.site';
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://proof-foundry.hello18528.chatgpt.site'),
+  metadataBase: new URL(PUBLIC_SITE_URL),
   alternates: { canonical: '/' },
   title: {
     default: 'ProofFoundry — Proof-carrying ideas',
