@@ -49,6 +49,6 @@ export function decodeWorkspaceSnapshot(snapshot: string): FoundryWorkspace {
   } catch {
     throw new Error('Workspace snapshot is not valid JSON.');
   }
-  if (!isWorkspace(parsed)) throw new Error('Snapshot is not a valid ProofFoundry workspace.');
+  if (!isWorkspace(parsed)) throw new Error('Snapshot is not a valid LaunchPad workspace.');
   return structuredClone(parsed);
 }

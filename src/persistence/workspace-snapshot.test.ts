@@ -20,7 +20,7 @@ describe('workspace snapshots', () => {
 
   it('rejects corrupt, oversized, or structurally invalid snapshots', () => {
     expect(() => decodeWorkspaceSnapshot('{not-json')).toThrow('valid JSON');
-    expect(() => decodeWorkspaceSnapshot(JSON.stringify({ id: 'x' }))).toThrow('valid ProofFoundry workspace');
+    expect(() => decodeWorkspaceSnapshot(JSON.stringify({ id: 'x' }))).toThrow('valid LaunchPad workspace');
     expect(() => decodeWorkspaceSnapshot(' '.repeat(1_500_001))).toThrow('maximum size');
   });
 });

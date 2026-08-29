@@ -1,7 +1,7 @@
 import { createInMemoryFoundry } from '../domain/foundry-service';
 import { registerFoundryTools, type ModelContextLike, type WebMCPToolDefinition } from './register-tools';
 
-describe('ProofFoundry WebMCP registration', () => {
+describe('LaunchPad WebMCP registration', () => {
   it('registers the complete composable 16-tool control plane with narrow schemas', () => {
     const definitions: WebMCPToolDefinition[] = [];
     const context: ModelContextLike = {

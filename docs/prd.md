@@ -2,7 +2,7 @@
 
 ## **LaunchPad**
 
-**Working tagline:** **Raw signals in. Proof-carrying ideas out.**
+**Working tagline:** **Evidence in. Defensible ideas out.**
 
 **Alternative tagline:** **Turn a messy problem into an idea you can defend.**
 
@@ -44,7 +44,7 @@ That framing makes the product more trustworthy, more enterprise-ready, and less
 
 # 2. Executive summary
 
-ProofFoundry is a visual, agent-native research and ideation workspace.
+LaunchPad is a visual, agent-native research and ideation workspace.
 
 A user enters a real problem, such as:
 
@@ -63,7 +63,7 @@ A user enters a real problem, such as:
 - a growth or analytics problem.
     
 
-The user’s agent then operates ProofFoundry through WebMCP.
+The user’s agent then operates LaunchPad through WebMCP.
 
 The agent:
 
@@ -88,7 +88,7 @@ The agent:
 10. assembles a final **Proof-Carrying Idea Blueprint**.
     
 
-The human sees the entire process happen inside a pixel-like factory.
+The human sees the entire process advance through a compact interactive 3D factory.
 
 Research papers, reports, analytics, uploaded documents, community observations, and market evidence enter as “raw material.” Findings move through visual processing stations. Contradictions are flagged as defects. Insights are assembled into a final product blueprint.
 
@@ -116,7 +116,7 @@ This evidence lineage is the product’s primary innovation.
 
 # 3. Five-second pitch
 
-> **ProofFoundry turns a messy problem into a defensible idea. ChatGPT operates a live research factory through WebMCP, combining public research and private business data until every part of the final idea is backed by evidence.**
+> **LaunchPad turns a messy problem into a defensible idea. ChatGPT operates a live research factory through WebMCP, combining public research and private business data until every part of the final idea is backed by evidence.**
 
 The visual hook:
 
@@ -125,7 +125,7 @@ PROBLEM IN
    ↓
 RESEARCH FACTORY
    ↓
-PROOF-CARRYING IDEA OUT
+DEFENSIBLE IDEA OUT
 ```
 
 The memorable phrase for judges is:
@@ -198,7 +198,7 @@ IDEAS EXIST
 TRACEABLE RESEARCH-TO-IDEA REASONING
 ```
 
-ProofFoundry closes that gap.
+LaunchPad closes that gap.
 
 ---
 
@@ -206,7 +206,7 @@ ProofFoundry closes that gap.
 
 ## Long-term vision
 
-ProofFoundry becomes the default workspace for turning ambiguous problems into evidence-backed interventions.
+LaunchPad becomes the default workspace for turning ambiguous problems into evidence-backed interventions.
 
 Its core object is not a document, board, prompt, or chat.
 
@@ -240,7 +240,7 @@ The user should understand the product before the first tool call finishes.
 
 WebMCP is the **control plane**, not the research data source.
 
-ProofFoundry owns:
+LaunchPad owns:
 
 - its source adapters;
     
@@ -304,7 +304,7 @@ The user says:
 
 > “Research this problem, prioritize first-party behavior and recent academic evidence, find what contradicts the obvious solution, and construct the best idea we could test in six weeks.”
 
-The agent composes ProofFoundry’s tools to complete that workflow.
+The agent composes LaunchPad’s tools to complete that workflow.
 
 The user watches sources arrive, findings form, gaps appear, and ideas change.
 
@@ -328,7 +328,7 @@ This is the human-agent experience judges need to see.
 
 # 7. Product positioning
 
-ProofFoundry should not be positioned as:
+LaunchPad should not be positioned as:
 
 - another AI search engine;
     
@@ -358,7 +358,7 @@ It should be positioned as:
 |Research assistants|Summaries and citations|Limited connection between findings and product decisions|
 |Whiteboards|Flexible visual organization|Highly manual|
 |Analytics platforms|First-party behavioral evidence|Do not combine evidence into new interventions|
-|ProofFoundry|Shared evidence graph and agent operation|Narrower, focused on problem-to-idea transformation|
+|LaunchPad|Shared evidence graph and agent operation|Narrower, focused on problem-to-idea transformation|
 
 ---
 
@@ -543,7 +543,7 @@ The interaction model is:
 ```text
 ChatGPT conversation
        +
-ProofFoundry visual workspace
+LaunchPad visual workspace
        +
 WebMCP site tools
 ```
@@ -1732,32 +1732,23 @@ This is the correct trade-off for Execution.
 
 ## Design direction
 
-The interface should borrow Cubecade’s visual grammar without copying its specific object or layout:
+The interface combines two references without copying either one:
 
-- dark arcade-like background;
+- Cubecade contributes an object-first composition: one interactive 3D object anchors the opening viewport and makes system state tangible.
     
-- neon accent colors;
+- Willow contributes restraint: generous space, editorial sans-serif typography, quiet framing, soft lavender atmosphere, and a strong light/dark transition.
     
-- bold block typography;
+- LaunchPad provides the original product metaphor: a compact working factory whose seven stations represent the real evidence-to-blueprint workflow.
     
-- HUD-style status readouts;
-    
-- central animated object;
-    
-- visible agent readiness;
-    
-- playful but technically precise controls.
-    
+- Agent readiness and activity are explicit but subordinate to the user’s problem and current result.
 
-Cubecade is officially described as an arcade-style experience centered around an interactive 3D object, with agent actions visibly queued and animated. Its screenshot uses a dark field, high-contrast neon accents, bold display type, and a right-hand status HUD. ([OpenAI Developers](https://developers.openai.com/showcase/cubecade-rubiks "https://developers.openai.com/showcase/cubecade-rubiks"))
-
-ProofFoundry should replace the cube with an original 2.5D pixel factory.
+The 3D factory should be smaller than Cubecade’s cube—roughly half its visual mass—so the launch brief and WebMCP explanation remain readable in the first viewport.
 
 ## Design principle
 
-**80% functional data visualization, 20% game-like metaphor.**
+**80% clear product workflow, 20% spatial factory metaphor.**
 
-The factory should create wow factor without making the output feel unserious.
+The factory should create a memorable center of gravity without turning the workspace into a game dashboard.
 
 ---
 
@@ -1766,7 +1757,7 @@ The factory should create wow factor without making the output feel unserious.
 ## Working brand
 
 ```text
-PROOF//FOUNDRY
+LAUNCHPAD
 ```
 
 ## Landing-page copy
@@ -1774,28 +1765,28 @@ PROOF//FOUNDRY
 Eyebrow:
 
 ```text
-INSERT A PROBLEM
+THE RESEARCH FACTORY
 ```
 
 Headline:
 
 ```text
-FORGE THE
-DEFENSIBLE.
+EVIDENCE IN.
+DEFENSIBLE IDEAS OUT.
 ```
 
 Body:
 
 ```text
-Feed the line a real problem.
-Your agent turns scattered signals into
-a proof-carrying idea.
+Give LaunchPad a real product problem.
+You and a browser agent turn scattered evidence
+into one traceable, testable blueprint.
 ```
 
 CTA:
 
 ```text
-START PRODUCTION ↗
+LOAD DEMO PROBLEM
 ```
 
 Status indicator:
@@ -1808,52 +1799,49 @@ Status indicator:
 
 |Role|Suggested color|
 |---|---|
-|Background|Near-black navy `#080A18`|
-|Elevated panel|Dark indigo `#11152A`|
-|Primary text|Warm white `#F4F1E8`|
-|Primary action|Acid lime `#C9FF3D`|
-|Creative/idea|Hot pink `#FF3EA5`|
-|Evidence/info|Electric cyan `#47E7FF`|
-|Warning|Amber `#FFB84D`|
-|Contradiction|Coral red `#FF5D68`|
+|Background|Warm near-black `#0D0C12`|
+|Atmosphere|Soft violet `#9587FF`|
+|Secondary atmosphere|Pale lavender `#D8D3FF`|
+|Light surface|Warm ivory `#F6F3ED`|
+|Completed state|Soft mint `#8FFFD0`|
+|Warning|Muted amber `#FFC56E`|
+|Contradiction|Soft coral `#FF8174`|
 
 ## Typography
 
-- Display: pixel-inspired open-source font;
+- Display and interface: spacious Geist Sans with restrained weight contrast;
     
-- interface: monospaced or semi-monospace;
+- metadata, tool names, and compact metrics: Geist Mono;
     
-- evidence body text: highly readable sans-serif;
+- evidence and blueprint copy: readable sans-serif at comfortable line length;
     
 - numeric proof cards: tabular numerals.
-    
 
-Do not use a pixel font for long citations.
+Monospace is a semantic cue for machine-readable details, not the overall visual identity.
 
 ---
 
 # 26. Main workspace layout
 
-Desktop-first, optimized for the ChatGPT side-by-side browser.
+Desktop-first, optimized for the ChatGPT side-by-side browser, with a complete stacked mobile layout.
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│ PROOF//FOUNDRY          PROJECT 001       ● WEBMCP READY    │
-├───────────────┬──────────────────────────────┬──────────────┤
-│               │                              │              │
-│ PROBLEM       │       FACTORY FLOOR          │ FACTORY HUD  │
-│ BRIEF         │                              │              │
-│               │  SOURCE → FINDING → IDEA     │ Sources 024  │
-│ Audience      │                              │ Findings 087 │
-│ Outcome       │  [animated stations]         │ Gaps 004     │
-│ Constraints   │                              │ Conflicts 03 │
-│               │                              │ Coverage 82% │
-├───────────────┴──────────────────────────────┴──────────────┤
-│ PRODUCTION LOG · Agent and human actions                    │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ LaunchPad                 ● WebMCP ready              Activity    │
+├────────────────┬────────────────────────────┬────────────────────┤
+│ LAUNCH BRIEF   │    INTERACTIVE FACTORY     │ WEBMCP RUN         │
+│                │                            │                    │
+│ Problem        │      [7 real stations]     │ 1 Read workspace   │
+│ Audience       │                            │ 2 Call typed tool  │
+│ Outcome        │    orbit · select · trace  │ 3 Page updates     │
+│ Constraints    │                            │ latest agent event │
+├────────────────┴────────────────────────────┴────────────────────┤
+│ RESEARCH WORKBENCH · evidence · candidates · blueprint           │
+└──────────────────────────────────────────────────────────────────┘
+                                  Activity opens as an overlay →
 ```
 
-## Left panel: Problem Specification
+## Left: Launch brief
 
 - problem;
     
@@ -1868,7 +1856,7 @@ Desktop-first, optimized for the ChatGPT side-by-side browser.
 - editable decision criteria.
     
 
-## Center: Factory Floor
+## Center: Interactive factory
 
 Source lanes feed into stations:
 
@@ -1888,26 +1876,27 @@ STRESS CHAMBER
 BLUEPRINT PRINTER
 ```
 
-## Right panel: HUD
+Each station is selectable by pointer or keyboard. Its state and displayed metric are derived from the shared domain workspace, never from a separate demo animation.
 
-- source count;
-    
-- accepted findings;
-    
-- contradictions;
-    
-- source diversity;
-    
-- unsupported components;
-    
-- active agent tool;
-    
-- queued operations;
-    
-- factory state.
-    
+## Right: WebMCP run rail
 
-## Bottom: Production Log
+- plain-language three-step explanation;
+    
+- exact count of registered typed tools;
+    
+- connection state;
+    
+- latest real agent activity;
+    
+- copyable judge prompt;
+    
+- clear manual fallback when WebMCP is unavailable.
+
+## Activity drawer
+
+The full history is closed by default and opens from the header. It distinguishes human, agent, and system activity; displays the exact tool, result, status, and workspace version; supports Escape/backdrop dismissal; and restores focus to the trigger.
+
+Example history:
 
 Example:
 
@@ -1927,20 +1916,20 @@ Every visual object must have meaning.
 
 |Visual element|Real object|
 |---|---|
-|Source crate|Source record|
-|Small glowing block|Extracted finding|
-|Stacked crates|Duplicate source family|
+|Source intake|Source record|
+|Conveyor packet|Extracted finding or work item|
+|Evidence stacks|Accepted and pending findings|
 |Red defective block|Contradictory or weak finding|
 |Conveyor lane|Source category|
 |Machine station|Pipeline operation|
 |Blueprint sheet|Idea candidate|
 |Glowing connection|Evidence link|
 |Broken connection|Unsupported idea component|
-|Factory alarm|Quality-gate failure|
+|Beacon pulse|Active stage or agent operation|
 
 When a source is removed, dependent evidence lines should fade or break.
 
-When an idea is revised, affected blueprint modules should visibly reassemble.
+When an idea is revised, the active station and supporting workbench should update together.
 
 That is the key wow moment.
 
@@ -1950,7 +1939,7 @@ That is the key wow moment.
 
 ## Empty state
 
-Central idle factory.
+Calm idle factory with the launch brief as the primary action.
 
 Copy:
 
@@ -1968,7 +1957,7 @@ Do not display an indefinite spinner.
 
 ## Evidence inspection
 
-The factory zooms into the inspection station.
+Selecting the review station and opening a finding reveals the inspection surface.
 
 Split screen:
 
@@ -1978,13 +1967,11 @@ ORIGINAL SOURCE | EXTRACTED FINDING
 
 ## Ideation
 
-Three assembly bays produce candidate blueprints.
+The idea station activates while the workbench produces three candidate blueprints.
 
 ## Stress test
 
-The selected idea enters a red-lit test chamber.
-
-Contradiction cards strike the blueprint.
+The stress chamber activates and the workbench exposes counter-evidence and adoption or feasibility risks.
 
 ## Final output
 
@@ -1996,7 +1983,7 @@ The final idea should be easy to screenshot.
 
 # 29. Motion requirements
 
-- Tool invocation: station pulses;
+- Tool invocation: active station and beacon pulse;
     
 - source discovered: crate enters lane;
     
@@ -2008,7 +1995,7 @@ The final idea should be easy to screenshot.
     
 - contradiction: red signal flashes once;
     
-- idea generation: modules assemble into blueprint;
+- idea generation: blueprint bay activates;
     
 - evidence trace: upstream path lights sequentially;
     
@@ -2017,7 +2004,7 @@ The final idea should be easy to screenshot.
 
 All animation must support reduced-motion mode.
 
-Avoid heavy WebGL unless already comfortable with it. A 2.5D implementation using CSS transforms, SVG, and a graph library is more reliable for the deadline.
+Use a compact procedural Three.js scene with simple geometry, one renderer, conservative lighting, no wheel zoom, and complete disposal on unmount. Pause ambient movement when off-screen and disable it under reduced-motion preferences. Every pointer interaction needs a visible keyboard equivalent and a useful non-WebGL fallback.
 
 ---
 
@@ -2031,7 +2018,7 @@ Avoid heavy WebGL unless already comfortable with it. A 2.5D implementation usin
                    │ WebMCP
                    ▼
 ┌─────────────────────────────────────────┐
-│ ProofFoundry top-level React application│
+│ LaunchPad top-level React application│
 │                                         │
 │ • Factory UI                            │
 │ • Workspace state                       │
@@ -2636,27 +2623,23 @@ It also produces a visually understandable final idea.
 
 ---
 
-# 41. Demo script — 2 minutes 45 seconds
+# 41. Demo script — 2 minutes 20 seconds
 
-## 0:00–0:15 — Hook
+## 0:00–0:20 — Hook and WebMCP loop
 
-Show the empty pixel factory.
+Show the launch brief, compact interactive factory, and WebMCP rail together.
 
 Narration:
 
-> “Teams do not lack information. They lack a visible path from information to decision. ProofFoundry turns a problem into a proof-carrying idea.”
+> “Teams do not lack information. They lack a visible path from information to decision. LaunchPad turns scattered evidence into an idea you can defend. This factory reflects the real research state.”
 
-## 0:15–0:30 — Problem entry
+Point out the loop: the browser agent reads this workspace, calls one of 16 typed tools, and the same page updates. Copy the prepared demo prompt.
 
-Paste the seeded SaaS problem.
+## 0:20–0:50 — WebMCP moves the product
 
-Ask ChatGPT:
+Give the copied prompt to the browser agent. Ask it to load the seeded SaaS problem, plan research, source the curated evidence, and extract findings.
 
-> “Use ProofFoundry to research this problem. Prioritize our analytics, recent research, and evidence that challenges the obvious solution.”
-
-## 0:30–1:10 — Factory activates
-
-Show the agent calling:
+As the factory advances, show the agent calling:
 
 - `update_problem_brief`;
     
@@ -2664,46 +2647,31 @@ Show the agent calling:
     
 - `search_sources`;
     
-- `import_source`;
-    
 - `extract_findings`.
-    
 
-Source crates arrive.
+The live WebMCP event shows intent, exact tool, and visible result.
 
-Findings move through stations.
+## 0:50–1:15 — Evidence inspection and ideas
 
-## 1:10–1:30 — Evidence inspection
+Open one numerical finding. Reveal its exact source context, population, timeframe, caveats, and synthetic-data label.
 
-Show one numerical finding.
+Accept the findings, synthesize insights, and generate three candidates. Show why Admin Guild initially scores 98.
 
-Click the citation and reveal the exact source context.
-
-Show one contradiction.
-
-## 1:30–1:50 — Human intervention
+## 1:15–1:40 — Evidence changes the recommendation
 
 Say:
 
 > “Exclude community anecdotes and optimize for a six-week enterprise implementation.”
 
-The agent updates the workspace.
+The agent calls `review_findings`. Admin Guild falls to 50% support and First-Value Flightpath becomes the recommendation at 90.
 
-One candidate loses evidence.
+## 1:40–2:00 — Attack, then commit
 
-## 1:50–2:15 — Idea output
+Stress-test First-Value Flightpath. Show the counter-evidence and feasibility risks, then finalize only after the quality gates pass.
 
-Three candidates appear.
+## 2:00–2:20 — Proof lineage and agent proof
 
-The strongest enters the stress chamber.
-
-The final blueprint prints.
-
-## 2:15–2:35 — Proof lineage
-
-Click one core feature.
-
-The path lights up from:
+Click one core feature. The path lights up from:
 
 ```text
 Feature
@@ -2712,22 +2680,11 @@ Feature
 → Exact source
 ```
 
-## 2:35–2:45 — Close
-
-Show:
-
-- the idea;
-    
-- proof cards;
-    
-- counter-evidence;
-    
-- next experiment.
-    
+Open **Activity** briefly to verify the actor, exact WebMCP tool, result, and workspace version, then close it and export the public-safe blueprint.
 
 Narration:
 
-> “Raw signals in. Proof-carrying ideas out. Built for humans and agents with WebMCP.”
+> “Evidence in. Defensible ideas out. LaunchPad is one shared product for humans and agents, made operable by WebMCP.”
 
 Judges may choose to rely heavily on the video, description, and images instead of fully testing every submission, so the demonstration must communicate the product independently and immediately. ([The WebMCP Challenge](https://webmcp.devpost.com/rules "https://webmcp.devpost.com/rules"))
 
@@ -2998,23 +2955,23 @@ The project is ready when all of the following are true:
 
 ## Project title
 
-**ProofFoundry — Raw signals in. Proof-carrying ideas out.**
+**LaunchPad — Evidence in. Defensible ideas out.**
 
 ## One-line description
 
-> ProofFoundry is an agent-native research factory that turns messy business and customer problems into evidence-backed ideas whose features, assumptions, and claims can be traced directly to their sources.
+> LaunchPad is an agent-native research factory that turns messy business and customer problems into evidence-backed ideas whose features, assumptions, and claims can be traced directly to their sources.
 
 ## Why WebMCP
 
-> Research-to-idea work requires many connected operations: framing a problem, planning research, importing sources, extracting findings, reviewing evidence, identifying gaps, generating candidates, stress-testing assumptions, and tracing final decisions back to citations. ProofFoundry exposes these operations as composable WebMCP tools, allowing the user’s agent to operate the same live visual workspace while the human reviews evidence and controls judgment.
+> Research-to-idea work requires many connected operations: framing a problem, planning research, importing sources, extracting findings, reviewing evidence, identifying gaps, generating candidates, stress-testing assumptions, and tracing final decisions back to citations. LaunchPad exposes these operations as composable WebMCP tools, allowing the user’s agent to operate the same live visual workspace while the human reviews evidence and controls judgment.
 
 ## What was difficult before
 
-> Teams had to choose between manually coordinating dozens of tabs and documents or accepting an AI-generated recommendation whose reasoning was difficult to inspect. ProofFoundry makes the entire evidence-to-idea path visible, editable, and auditable.
+> Teams had to choose between manually coordinating dozens of tabs and documents or accepting an AI-generated recommendation whose reasoning was difficult to inspect. LaunchPad makes the entire evidence-to-idea path visible, editable, and auditable.
 
 ## Creative thesis
 
-> The future of agent-native work is not a chatbot attached to every website. It is websites that expose structured environments where agents can assemble complex, verifiable work products alongside humans. ProofFoundry applies that idea to innovation itself.
+> The future of agent-native work is not a chatbot attached to every website. It is websites that expose structured environments where agents can assemble complex, verifiable work products alongside humans. LaunchPad applies that idea to innovation itself.
 
 ---
 

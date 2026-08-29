@@ -7,6 +7,12 @@ describe('production metadata', () => {
   it('resolves canonical and social assets against the public site', () => {
     expect(metadata.metadataBase?.toString()).toBe('https://proof-foundry.hello18528.chatgpt.site/');
     expect(metadata.alternates?.canonical).toBe('/');
+    expect(metadata.applicationName).toBe('LaunchPad');
+    expect(metadata.title).toEqual(expect.objectContaining({ default: expect.stringContaining('LaunchPad') }));
+    expect(metadata.openGraph).toEqual(expect.objectContaining({
+      title: expect.stringContaining('LaunchPad'),
+      images: expect.arrayContaining([expect.objectContaining({ alt: expect.stringContaining('LaunchPad') })]),
+    }));
     expect(metadata.openGraph?.images).toEqual(expect.arrayContaining([
       expect.objectContaining({ url: '/og.png' }),
     ]));

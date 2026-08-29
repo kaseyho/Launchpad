@@ -1,8 +1,8 @@
 {
-  "name": "prooffoundry",
+  "name": "launchpad",
   "version": "0.1.0",
   "private": true,
-  "description": "A WebMCP-native visual research foundry for proof-carrying ideas.",
+  "description": "A WebMCP-native research workspace for defensible ideas.",
   "license": "MIT",
   "engines": {
     "node": ">=22.13.0"

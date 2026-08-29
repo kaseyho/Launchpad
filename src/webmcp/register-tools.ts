@@ -81,7 +81,7 @@ export function getFoundryToolDefinitions(
   return [
     {
       name: 'get_foundry_state',
-      description: 'Read the active ProofFoundry stage, record counts, quality warnings, and selected candidate. This only records an audit event and does not change research decisions.',
+      description: 'Read the active LaunchPad stage, record counts, quality warnings, and selected candidate. This only records an audit event and does not change research decisions.',
       inputSchema: emptySchema(),
       annotations: { readOnlyHint: true },
       execute: () => toolResult(service.getFoundryState('agent')),

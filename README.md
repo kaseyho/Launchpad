@@ -1,27 +1,34 @@
-# ProofFoundry
+# LaunchPad
 
-**Raw signals in. Proof-carrying ideas out.**
+**Evidence in. Defensible ideas out.**
 
-[Open the live public app](https://proof-foundry.hello18528.chatgpt.site) · [Watch the 1:49 narrated demo](artifacts/demo/ProofFoundry-demo.mp4)
+[Open the live public app](https://proof-foundry.hello18528.chatgpt.site)
 
-ProofFoundry is a visual research factory where a human and a browser agent turn fragmented evidence into one defensible, testable idea. It is built for the [WebMCP Challenge](https://webmcp.devpost.com/) and exposes the complete research-to-blueprint workflow as 16 narrow WebMCP tools—not as a one-shot generation wrapper.
+LaunchPad is a visual research factory where a human and a browser agent turn fragmented evidence into one defensible, testable idea. It is built for the [WebMCP Challenge](https://webmcp.devpost.com/) and exposes the complete research-to-blueprint workflow as 16 narrow WebMCP tools—not as a one-shot generation wrapper.
 
-The application is fully usable without an agent. Every manual control and every WebMCP tool invokes the same typed domain service, updates the same live workspace, and writes to the same visible audit log.
+The application is fully usable without an agent. Every manual control and every WebMCP tool invokes the same typed domain service, updates the same live workspace, and writes to the same audit trail. The activity drawer stays closed until someone wants to inspect it.
+
+## Why WebMCP matters
+
+LaunchPad does not place a chat box beside the product. It exposes the product itself as 16 typed browser tools:
+
+1. An agent reads the same workspace the human sees.
+2. It calls one narrow LaunchPad tool, such as `extract_findings` or `stress_test_candidate`.
+3. The shared page changes immediately, including the interactive factory stage, workbench, scores, and proof lineage.
+
+The first screen makes that loop visible with a live WebMCP rail and a copyable demo prompt. Open **Activity** only when you want proof of who acted, which tool ran, and what changed.
 
 Use **Define problem** for a fresh brief, or load the curated problem for the repeatable judging sequence. The Source Dock accepts public URLs, pasted excerpts, PDF/TXT/CSV/JSON uploads, and live Crossref academic-metadata results.
 
 ## The two-minute demo
 
-1. Select **Load demo problem** to define a six-week SaaS onboarding opportunity.
-2. Plan six source lanes, source the curated evidence pack, and extract nine citation-complete findings.
-3. Open the Evidence Inspector to inspect exact passages, context, caveats, and provenance.
-4. Accept the evidence, synthesize insights, and forge three candidates.
-5. Observe **Admin Guild** lead with a score of 98.
-6. Select **Exclude community anecdotes**. Candidate A drops to 50% support with two unsupported components.
-7. Observe **First-Value Flightpath** become the strongest candidate at 90.
-8. Stress-test and finalize the new recommendation.
-9. In the blueprint, select **Why Outcome preview exists** to illuminate the feature → insight → finding → source proof path.
-10. Export a public-safe Markdown or JSON blueprint.
+1. Copy the prompt from the WebMCP rail and give it to the browser agent.
+2. Watch the agent read the shared workspace, invoke typed tools, and move the 3D factory through research, review, ideation, stress testing, and blueprint stages.
+3. Inspect one evidence record to verify its exact passage, context, caveats, provenance, and synthetic-data label.
+4. Ask the agent to exclude community anecdotes. **Admin Guild** falls to 50% support and **First-Value Flightpath** becomes the recommendation at 90.
+5. Stress-test and finalize the new recommendation.
+6. Trace **Why Outcome preview exists** from the blueprint back through its insight and finding to the original source.
+7. Open **Activity** briefly to verify the real agent tool calls, then export a public-safe Markdown or JSON blueprint.
 
 In a WebMCP-enabled browser, an agent can perform the same sequence through the registered tools while the human watches and intervenes in the same page.
 
@@ -30,9 +37,9 @@ In a WebMCP-enabled browser, an agent can perform the same sequence through the 
 | Tool | Mode | Visible effect |
 |---|---|---|
 | `get_foundry_state` | Read | Returns stage, counts, warnings, and selected candidate |
-| `update_problem_brief` | Write | Updates the Problem Hopper |
+| `update_problem_brief` | Write | Updates the shared launch brief |
 | `plan_research` | Write | Activates six structured source lanes |
-| `search_sources` | Write | Adds deduplicated source crates |
+| `search_sources` | Write | Adds deduplicated source records |
 | `import_source` | Write | Adds a URL, excerpt, upload, or connected-data result |
 | `extract_findings` | Write | Moves citation-complete findings into inspection |
 | `review_findings` | Write | Accepts, rejects, or qualifies evidence and recalculates support |
@@ -71,9 +78,9 @@ npm run db:generate
 
 ## Architecture
 
-- Vinext/React renders one persistent, responsive factory workspace.
+- Vinext/React renders one persistent, responsive factory workspace around a procedural Three.js model.
 - A framework-independent TypeScript service owns state transitions, evidence gates, lineage, scoring, stress tests, and exports.
-- Manual UI handlers and top-level `document.modelContext.registerTool` handlers call that same service instance.
+- Manual UI handlers and top-level `document.modelContext.registerTool` handlers call that same service instance; the WebMCP rail and optional activity drawer expose the result.
 - Cloudflare D1 stores versioned workspace snapshots using an anonymous, HTTP-only browser identity.
 - Cloudflare R2 stores PDF, TXT, CSV, and JSON evidence uploads; D1 stores their searchable metadata.
 - A server-side Crossref adapter returns citation-ready DOI metadata without treating metadata or abstracts as accepted evidence.
@@ -86,7 +93,7 @@ See [docs/architecture.md](docs/architecture.md) for the detailed state, persist
 - Synthetic data is always labelled.
 - Findings remain pending until a human or an explicitly directed agent accepts, rejects, or qualifies them.
 - Every public claim in the demo carries an exact excerpt, source location, access mode, and retrieval timestamp.
-- Inaccessible content remains metadata-only; ProofFoundry never fabricates a passage.
+- Inaccessible content remains metadata-only; LaunchPad never fabricates a passage.
 - Public exports omit private sources and their findings by default.
 - Uploaded files accept only PDF, TXT, CSV, or JSON up to 10 MB and remain in private object storage.
 - Tokens and credentials are never placed in tool results or workspace state.
@@ -106,6 +113,8 @@ The GA4 funnel, support-ticket sample, and two community observations are synthe
 ## Current scope
 
 This P0 is deliberately one excellent problem-to-blueprint journey. It does not include team accounts, enterprise OAuth connectors, semantic search over arbitrary uploads, or autonomous evidence acceptance. PDF uploads are stored and represented as metadata-only until a parser or user-supplied excerpt is available.
+
+The repository also retains a [legacy 1:49 demo recording](artifacts/demo/ProofFoundry-demo.mp4) of the earlier interface for project history; it does not represent the current LaunchPad design.
 
 ## License
 

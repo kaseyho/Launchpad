@@ -1,8 +1,8 @@
-# ProofFoundry architecture
+# LaunchPad architecture
 
 ## One state machine, two operators
 
-ProofFoundry keeps the application workspace mounted while its internal stage advances:
+LaunchPad keeps the application workspace mounted while its internal stage advances:
 
 ```text
 EMPTY → PROBLEM_DEFINED → RESEARCH_PLANNED → SOURCING
@@ -37,7 +37,13 @@ Operations fail closed when their prerequisites are not met. Examples:
 - stress testing requires accepted counter-evidence;
 - finalization requires at least six accepted findings, three independent source domains, two evidence categories, quantitative and qualitative proof, counter-evidence, and complete component support.
 
-Failures contain a stable code, an actionable message, and current/required counts where useful. The error is visible in the HUD and the audit log.
+Failures contain a stable code, an actionable message, and current/required counts where useful. The error appears beside the failed action and remains available in the activity drawer.
+
+## Presentation boundary
+
+The interface derives its visuals from domain state instead of maintaining a second animation state machine. `factory-stages.ts` maps the current workspace stage, progress, counts, and latest agent event into seven factory stations. The procedural Three.js scene renders those stations, conveyor packets, and beacon state; selecting a station reveals its real metric and purpose.
+
+The first viewport keeps three responsibilities distinct: the launch brief defines the human goal, the factory shows where the workflow is, and the WebMCP rail explains how an agent operates the same product. The full research workbench sits below this overview. Audit history is deliberately hidden behind the **Activity** control so it can prove an agent action without permanently crowding the workspace.
 
 ## WebMCP boundary
 
