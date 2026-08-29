@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialWorkspace } from '../domain/foundry-service';
-import { saveWorkspaceSnapshot } from './client-workspace';
+import { loadLocalWorkspace, saveWorkspaceSnapshot } from './client-workspace';
 
 describe('saveWorkspaceSnapshot', () => {
   it('uses a cancellable request without the browser keepalive body quota', async () => {
@@ -17,5 +17,24 @@ describe('saveWorkspaceSnapshot', () => {
     const request = fetcher.mock.calls[0][1] as RequestInit;
     expect(request.keepalive).toBeUndefined();
     expect(JSON.parse(request.body as string)).toEqual({ workspace });
+  });
+
+  it('keeps a valid browser-local snapshot when the server is unavailable', async () => {
+    const workspace = createInitialWorkspace();
+    workspace.version = 3;
+    const fetcher = vi.fn().mockRejectedValue(new Error('offline'));
+    const values = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { values.set(key, value); },
+    };
+
+    await expect(saveWorkspaceSnapshot(workspace, undefined, fetcher, storage)).resolves.toBe(true);
+    expect(loadLocalWorkspace(storage)?.version).toBe(3);
+  });
+
+  it('ignores a malformed browser-local snapshot', () => {
+    const storage = { getItem: () => '{not-json' };
+    expect(loadLocalWorkspace(storage)).toBeUndefined();
   });
 });

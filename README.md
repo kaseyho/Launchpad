@@ -2,7 +2,7 @@
 
 **Evidence in. Defensible ideas out.**
 
-[Open the live public app](https://proof-foundry.hello18528.chatgpt.site)
+[Open the live public app](https://launchpad-nine-sand.vercel.app)
 
 LaunchPad is a visual research factory where a human starts with their own problem and a browser agent helps turn relevant evidence into one defensible, testable idea. It is built for the [WebMCP Challenge](https://webmcp.devpost.com/) and exposes the complete research-to-blueprint workflow as 16 narrow WebMCP tools—not as a one-shot generation wrapper.
 
@@ -81,8 +81,8 @@ npm run db:generate
 - Vinext/React renders one persistent, responsive factory workspace around the supplied voxel factory GLB.
 - A framework-independent TypeScript service owns state transitions, evidence gates, lineage, scoring, stress tests, and exports.
 - Manual UI handlers and top-level `document.modelContext.registerTool` handlers call that same service instance; the WebMCP rail and optional activity drawer expose the result.
-- Cloudflare D1 stores versioned workspace snapshots using an anonymous, HTTP-only browser identity.
-- Cloudflare R2 stores PDF, TXT, CSV, and JSON evidence uploads; D1 stores their searchable metadata.
+- Every host keeps a validated workspace snapshot in the user’s browser; the Cloudflare/Sites target also mirrors versioned snapshots to D1 using an anonymous, HTTP-only browser identity.
+- The Cloudflare/Sites target stores PDF, TXT, CSV, and JSON evidence uploads in R2. The public fallback host can still import TXT, CSV, and JSON directly in-browser; PDFs require a pasted excerpt when object storage is unavailable.
 - A server-side Crossref adapter returns citation-ready DOI metadata without treating metadata or abstracts as accepted evidence.
 - A deterministic judging pack remains available for the documented administrator-setup scenario, while custom problems never receive those unrelated fixtures.
 

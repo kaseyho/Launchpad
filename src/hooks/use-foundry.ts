@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { createFoundryService, createInitialWorkspace, type FoundryService } from '../domain/foundry-service';
 import type { FoundryWorkspace, ServiceFailure, ServiceSuccess, TraceNode } from '../domain/types';
-import { isAbortError, saveWorkspaceSnapshot } from '../persistence/client-workspace';
+import { isAbortError, loadLocalWorkspace, saveWorkspaceSnapshot } from '../persistence/client-workspace';
 
 type AnyResult = ServiceSuccess<unknown> | ServiceFailure;
 type ExportFile = { filename: string; mimeType: string; content: string };
@@ -42,6 +42,15 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') return;
     let cancelled = false;
+    const localWorkspace = loadLocalWorkspace();
+    if (localWorkspace) {
+      controller.replaceWorkspace(localWorkspace);
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setStorageStatus('saved');
+        setNotice('Restored your workspace from this browser.');
+      });
+    }
     void fetch('/api/workspace', { cache: 'no-store' })
       .then(async (response) => {
         if (response.status === 404) return undefined;
@@ -51,7 +60,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
       .then((payload) => {
         if (cancelled) return;
         setStorageStatus('ready');
-        if (payload?.workspace) {
+        if (payload?.workspace && (!localWorkspace || payload.workspace.version > localWorkspace.version)) {
           controller.replaceWorkspace(payload.workspace);
           setNotice('Restored the latest durable workspace snapshot.');
         }
@@ -59,7 +68,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
       })
       .catch(() => {
         if (!cancelled) {
-          setStorageStatus('offline');
+          setStorageStatus(localWorkspace ? 'saved' : 'ready');
           setPersistenceReady(true);
         }
       });

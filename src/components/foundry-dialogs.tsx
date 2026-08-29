@@ -81,14 +81,24 @@ export function SourceDialog({ open, onClose, service, report }: SourceDialogPro
           let importedUrl = url || undefined;
           let importedExcerpt = excerpt || undefined;
           if (file) {
-            const form = new FormData();
-            form.set('file', file);
-            const response = await fetch('/api/files', { method: 'POST', body: form });
-            const payload = await response.json() as { file?: { filename: string; document_url: string; excerpt?: string }; message?: string };
-            if (!response.ok || !payload.file) throw new Error(payload.message || 'The document could not be stored.');
-            importedTitle ||= payload.file.filename;
-            importedUrl = payload.file.document_url;
-            importedExcerpt = payload.file.excerpt;
+            try {
+              const form = new FormData();
+              form.set('file', file);
+              const response = await fetch('/api/files', { method: 'POST', body: form });
+              const payload = await response.json() as { file?: { filename: string; document_url: string; excerpt?: string }; message?: string };
+              if (!response.ok || !payload.file) throw new Error(payload.message || 'The document could not be stored.');
+              importedTitle ||= payload.file.filename;
+              importedUrl = payload.file.document_url;
+              importedExcerpt = payload.file.excerpt;
+            } catch {
+              const textLike = file.type.startsWith('text/') || ['application/json', 'application/csv'].includes(file.type);
+              importedTitle ||= file.name;
+              importedUrl = `document://browser/${encodeURIComponent(file.name)}`;
+              importedExcerpt ||= textLike ? (await file.text()).slice(0, 24_000) : undefined;
+              if (!importedExcerpt && file.type === 'application/pdf') {
+                throw new Error('This host cannot extract PDF text directly. Paste a relevant excerpt alongside the PDF.');
+              }
+            }
           }
           const result = service.importSource({ title: importedTitle, url: importedUrl, excerpt: importedExcerpt, sourceType, private: isPrivate, lane: sourceType === 'analytics' ? 'first_party' : sourceType === 'community' ? 'community' : 'customer' });
           report(result);
