@@ -13,23 +13,30 @@ describe('InteractiveFactory', () => {
   });
 
   it('keeps the current station visible when WebGL is unavailable', async () => {
-    render(<InteractiveFactory workspace={createInitialWorkspace()} />);
+    render(<InteractiveFactory
+      workspace={createInitialWorkspace()}
+      researchRun={{ phase: 'idle', progress: 0, message: 'Waiting for your problem statement.' }}
+    />);
 
     expect(screen.getByLabelText(/interactive research factory/i)).toBeVisible();
     expect(await screen.findByText(/3d unavailable/i)).toBeVisible();
-    const caption = screen.getByText('Source Dock').closest('.factory-caption');
-    expect(caption).toHaveTextContent(/Source Dock/);
-    expect(caption).toHaveTextContent(/0 sources/);
+    expect(screen.getByText('Input open')).toBeVisible();
+    expect(screen.getByText('Intake gate')).toBeVisible();
+    expect(screen.getByText('Output empty')).toBeVisible();
   });
 
-  it('makes the current workspace station clear without relying on animation', async () => {
+  it('makes the input, current station, and output clear without relying on animation', async () => {
     const workspace = createInitialWorkspace();
-    workspace.stage = 'CANDIDATES_READY';
-    render(<InteractiveFactory workspace={workspace} />);
+    workspace.problemBrief.problemStatement = 'Restaurant managers cannot deliver consistent first-week training.';
+    render(<InteractiveFactory
+      workspace={workspace}
+      researchRun={{ phase: 'ideating', progress: 82, message: 'Building one solution.' }}
+    />);
 
     await screen.findByText(/3d unavailable/i);
-    const caption = screen.getByText('Idea Forge').closest('.factory-caption');
-    expect(caption).toHaveTextContent(/Idea Forge/);
-    expect(caption).toHaveTextContent(/0 idea candidates/);
+    const console = screen.getByText('Idea forge').closest('.factory-production-console');
+    expect(console).toHaveTextContent(/problem received/i);
+    expect(console).toHaveTextContent(/building output/i);
+    expect(console).toHaveTextContent(/82%/i);
   });
 });

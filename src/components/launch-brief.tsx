@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { FoundryWorkspace } from '../domain/types';
-import type { AutonomousResearchProgress, AutonomousResearchPhase } from '../research/autonomous-research';
+import type { AutonomousResearchProgress } from '../research/autonomous-research';
 
 interface LaunchBriefProps {
   workspace: FoundryWorkspace;
   researchRun: AutonomousResearchProgress;
   onStartResearch: (problemStatement: string) => Promise<boolean>;
+  onStop: () => void;
   onRetry: () => void;
   onReset: () => void;
   planName: string;
@@ -14,25 +15,10 @@ interface LaunchBriefProps {
   onOpenPlans: () => void;
 }
 
-const RUN_STEPS: Array<{ phase: AutonomousResearchPhase; label: string }> = [
-  { phase: 'planning', label: 'Frame the research' },
-  { phase: 'searching', label: 'Find relevant studies' },
-  { phase: 'extracting', label: 'Extract cited findings' },
-  { phase: 'synthesizing', label: 'Find the mechanisms' },
-  { phase: 'ideating', label: 'Build one solution' },
-  { phase: 'stress_testing', label: 'Challenge the recommendation' },
-];
-
-function phaseIndex(phase: AutonomousResearchPhase) {
-  if (phase === 'complete') return RUN_STEPS.length;
-  return RUN_STEPS.findIndex((step) => step.phase === phase);
-}
-
-export function LaunchBrief({ workspace, researchRun, onStartResearch, onRetry, onReset, planName, remainingRuns, monthlyRuns, onOpenPlans }: LaunchBriefProps) {
+export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, onRetry, onReset, planName, remainingRuns, monthlyRuns, onOpenPlans }: LaunchBriefProps) {
   const [problemStatement, setProblemStatement] = useState('');
   const [problemError, setProblemError] = useState('');
   const running = !['idle', 'complete', 'error'].includes(researchRun.phase);
-  const currentStep = phaseIndex(researchRun.phase);
 
   if (workspace.stage === 'EMPTY' && researchRun.phase === 'idle') {
     return (
@@ -93,22 +79,12 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onRetry, 
           <strong>{researchRun.message}</strong>
         </div>
         <div className="run-progress-track" aria-label={`${researchRun.progress}% complete`}><span style={{ width: `${researchRun.progress}%` }} /></div>
-        <ol className="run-steps">
-          {RUN_STEPS.map((step, index) => {
-            const state = researchRun.phase === 'error' && index === currentStep
-              ? 'error'
-              : index < currentStep || researchRun.phase === 'complete'
-                ? 'complete'
-                : index === currentStep
-                  ? 'active'
-                  : 'queued';
-            return <li key={step.phase} data-state={state}><span>{String(index + 1).padStart(2, '0')}</span><strong>{step.label}</strong><i aria-hidden="true" /></li>;
-          })}
-        </ol>
+        <p className="run-progress-handoff">Follow the live input → factory → output line beside this brief.</p>
         {researchRun.error && <p className="run-error" role="alert">{researchRun.error}</p>}
       </div>
 
       <div className="run-actions">
+        {running && <button type="button" className="run-reset" onClick={onStop}>Stop run</button>}
         {researchRun.phase === 'error' && researchRun.errorCode === 'usage_limit' && (
           <button type="button" className="run-retry" onClick={onOpenPlans}>Change research allowance →</button>
         )}

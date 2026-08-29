@@ -164,10 +164,15 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
       return true;
     } catch (error) {
       if (isAbortError(error)) {
-        setResearchRun({ phase: 'idle', progress: 0, message: 'Research stopped.' });
+        setResearchRun((current) => ({
+          phase: 'error',
+          progress: current.progress,
+          message: 'Research stopped.',
+          error: 'Your problem and completed work are safe. Retry when you are ready.',
+        }));
       } else {
         const message = error instanceof Error ? error.message : 'The research run could not be completed.';
-        setResearchRun({ phase: 'error', progress: 0, message: 'Research needs another attempt.', error: message });
+        setResearchRun((current) => ({ phase: 'error', progress: current.progress, message: 'Research needs another attempt.', error: message }));
         setNotice(message);
       }
       return false;
@@ -175,6 +180,10 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
       runAbortRef.current = undefined;
     }
   }, [allowance, checkAllowance, controller, service]);
+
+  const stopResearch = useCallback(() => {
+    runAbortRef.current?.abort();
+  }, []);
 
   const retryResearch = useCallback(() => {
     const problem = controller.getSnapshot().problemBrief.problemStatement;
@@ -241,6 +250,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
     researchRun,
     traceNodes,
     startResearch,
+    stopResearch,
     retryResearch,
     report,
     traceEvidence,

@@ -52,6 +52,8 @@ describe('FactoryShell autonomous workflow', () => {
     expect(screen.getByRole('textbox', { name: /what problem should launchpad solve/i })).toBeVisible();
     expect(screen.getByText(/you stop typing here/i)).toBeVisible();
     expect(screen.getByText(/no api key, source hunting, or manual research workflow/i)).toBeVisible();
+    expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/input open/i);
+    expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/output empty/i);
     expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/optional agent control/i);
     expect(screen.queryByRole('dialog', { name: /activity/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: /set your research capacity/i })).not.toBeInTheDocument();
@@ -76,6 +78,8 @@ describe('FactoryShell autonomous workflow', () => {
     expect(await screen.findByRole('heading', { name: /one solution. every claim traceable/i }, { timeout: 5000 })).toBeVisible();
     expect(screen.getByRole('region', { name: /evidence-backed solution/i })).toBeVisible();
     expect(screen.getByRole('heading', { name: /guided practice loop/i })).toBeVisible();
+    expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/problem processed/i);
+    expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/guided practice loop/i);
     expect(screen.getByRole('region', { name: /research findings/i })).toHaveTextContent(/7 findings/i);
     expect(screen.getAllByRole('link', { name: /open original research/i })).toHaveLength(7);
     expect(screen.queryByRole('button', { name: /plan research|add source|accept evidence/i })).not.toBeInTheDocument();
@@ -93,7 +97,7 @@ describe('FactoryShell autonomous workflow', () => {
     await user.type(screen.getByRole('textbox', { name: /what problem should launchpad solve/i }), CUSTOM_PROBLEM);
     await user.click(screen.getByRole('button', { name: /research this problem/i }));
 
-    expect(await screen.findByText(/monthly research allowance reached/i)).toBeVisible();
+    expect(await screen.findByRole('region', { name: /research run/i })).toHaveTextContent(/monthly research allowance reached/i);
     expect(screen.getByRole('button', { name: /change research allowance/i })).toBeVisible();
     expect(fetcher).not.toHaveBeenCalled();
   });

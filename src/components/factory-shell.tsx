@@ -101,6 +101,7 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
           workspace={workspace}
           researchRun={foundry.researchRun}
           onStartResearch={foundry.startResearch}
+          onStop={foundry.stopResearch}
           onRetry={foundry.retryResearch}
           onReset={foundry.resetWorkspace}
           planName={subscription.subscription.planId}
@@ -109,7 +110,7 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
           onOpenPlans={() => setSubscriptionOpen(true)}
         />
         <div className="launch-visual">
-          <InteractiveFactory workspace={workspace} />
+          <InteractiveFactory workspace={workspace} researchRun={foundry.researchRun} />
           <WebMCPRunRail workspace={workspace} ready={webmcp.ready} toolCount={webmcp.toolCount} researchRun={foundry.researchRun} />
         </div>
       </section>
