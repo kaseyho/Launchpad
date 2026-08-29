@@ -39,4 +39,18 @@ describe('InteractiveFactory', () => {
     expect(console).toHaveTextContent(/building output/i);
     expect(console).toHaveTextContent(/82%/i);
   });
+
+  it('offers a replay and a camera reset without restoring the removed side arrows', async () => {
+    const workspace = createInitialWorkspace();
+    workspace.problemBrief.problemStatement = 'Restaurant managers cannot deliver consistent first-week training.';
+    const { container } = render(<InteractiveFactory
+      workspace={workspace}
+      researchRun={{ phase: 'complete', progress: 100, message: 'Solution ready.' }}
+    />);
+
+    await screen.findByText(/3d unavailable/i);
+    expect(screen.getByRole('button', { name: /replay flow/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /reset view/i })).toBeVisible();
+    expect(container.querySelector('.factory-port')).toBeNull();
+  });
 });

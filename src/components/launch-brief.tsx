@@ -79,7 +79,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
           <strong>{researchRun.message}</strong>
         </div>
         <div className="run-progress-track" aria-label={`${researchRun.progress}% complete`}><span style={{ width: `${researchRun.progress}%` }} /></div>
-        <p className="run-progress-handoff">Follow the live input → factory → output line beside this brief.</p>
+        <p className="run-progress-handoff">Follow the live production line beside this brief.</p>
         {researchRun.error && <p className="run-error" role="alert">{researchRun.error}</p>}
       </div>
 
