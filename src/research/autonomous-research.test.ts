@@ -52,4 +52,29 @@ describe('autonomous LaunchPad research', () => {
     expect(blueprint.proofFindingIds.length).toBeGreaterThan(0);
     expect(blueprint.counterEvidenceIds.length).toBeGreaterThan(0);
   });
+
+  it('drops a non-English result even if a future source adapter returns one', async () => {
+    const foundry = createInMemoryFoundry();
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const isCounter = String(input).includes('limitations%20barriers');
+      const prefix = isCounter ? 'counter' : 'academic';
+      const results = Array.from({ length: 7 }, (_, index) => result(prefix, index + 1));
+      results[0] = {
+        ...results[0],
+        title: 'Συστήματα αυτόνομης διαχείρισης',
+        excerpt: 'Η σύγχρονη εποχή χαρακτηρίζεται από την ανάπτυξη της αυτοματοποίησης και της τεχνητής νοημοσύνης.',
+      };
+      return new Response(JSON.stringify({ results }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+
+    await runAutonomousResearch({
+      problem: 'Hospital porters face preventable safety risks because shift handoffs are inconsistent.',
+      service: foundry.service,
+      getWorkspace: foundry.getWorkspace,
+      fetcher,
+    });
+
+    expect(foundry.getWorkspace().sources.every((source) => !source.title.includes('Συστήματα'))).toBe(true);
+    expect(foundry.getWorkspace().findings.every((finding) => !finding.normalizedClaim.includes('σύγχρονη'))).toBe(true);
+  });
 });

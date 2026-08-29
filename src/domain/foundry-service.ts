@@ -1,4 +1,5 @@
 import { DEMO_FIXTURES, RESEARCH_QUESTION_TEMPLATES, createCandidateFixtures } from './demo-data';
+import { isEnglishFinding, isEnglishText, isLatinScriptText } from '../language/english-only';
 import type {
   Actor,
   Blueprint,
@@ -468,10 +469,12 @@ function markdownForBlueprint(workspace: FoundryWorkspace, blueprint: Blueprint,
   const proofFindings = blueprint.proofFindingIds
     .map((id) => workspace.findings.find((finding) => finding.id === id))
     .filter((finding): finding is Finding => Boolean(finding))
+    .filter(isEnglishFinding)
     .filter((finding) => includePrivate || !sourceForFinding(workspace, finding)?.private);
   const counterFindings = blueprint.counterEvidenceIds
     .map((id) => workspace.findings.find((finding) => finding.id === id))
-    .filter((finding): finding is Finding => Boolean(finding));
+    .filter((finding): finding is Finding => Boolean(finding))
+    .filter(isEnglishFinding);
 
   return [
     `# ${blueprint.name}`,
@@ -689,6 +692,9 @@ export function createFoundryService(
       if (!input.title.trim() || (!input.url?.trim() && !input.excerpt?.trim())) {
         return fail('import_source', actor, 'INVALID_SOURCE', 'A title and either an accessible URL or pasted excerpt are required.');
       }
+      if (!isEnglishText([input.title, input.excerpt].filter(Boolean).join(' '))) {
+        return fail('import_source', actor, 'ENGLISH_ONLY_SOURCE', 'LaunchPad creates English-only reports. Add an English title and excerpt instead.');
+      }
       if (input.url) {
         try {
           const parsed = new URL(input.url);
@@ -711,8 +717,8 @@ export function createFoundryService(
           lane: input.lane ?? 'customer',
           sourceType: input.sourceType,
           title: input.title.trim(),
-          author: input.author?.trim() || 'User provided',
-          publisher: input.publisher?.trim() || 'User-provided source',
+          author: input.author?.trim() && isLatinScriptText(input.author) ? input.author.trim() : 'User provided',
+          publisher: input.publisher?.trim() && isLatinScriptText(input.publisher) ? input.publisher.trim() : 'User-provided source',
           publishedAt: input.publishedAt?.trim() || now().slice(0, 10),
           url: input.url?.trim() || `document://${id}.txt`,
           accessMode: input.private ? 'private' : 'user_provided',

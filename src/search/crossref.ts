@@ -1,3 +1,5 @@
+import { isEnglishText, isLatinScriptText } from '../language/english-only';
+
 export interface CrossrefWork {
   DOI?: string;
   title?: string[];
@@ -41,18 +43,22 @@ export function mapCrossrefWork(work: CrossrefWork): AcademicSearchResult | unde
   const doi = work.DOI?.trim();
   const title = work.title?.[0]?.trim();
   if (!doi || !title) return undefined;
-  const authors = work.author
+  const rawAuthors = work.author
     ?.map((author) => [author.given, author.family].filter(Boolean).join(' '))
     .filter(Boolean)
     .join(', ') || 'Authors not supplied';
+  const authors = isLatinScriptText(rawAuthors) ? rawAuthors : 'Authors not supplied';
   const excerpt = work.abstract ? textOnly(work.abstract).slice(0, 600) : undefined;
+  if (!isEnglishText([textOnly(title), excerpt].filter(Boolean).join(' '))) return undefined;
+  const rawVenue = work['container-title']?.[0]?.trim() || 'Venue not supplied';
+  const rawPublisher = work.publisher?.trim() || 'Publisher not supplied';
   return {
     doi,
     title: textOnly(title),
     authors,
     published_at: publicationDate(work.published?.['date-parts']),
-    venue: work['container-title']?.[0]?.trim() || 'Venue not supplied',
-    publisher: work.publisher?.trim() || 'Publisher not supplied',
+    venue: isLatinScriptText(rawVenue) ? rawVenue : 'Venue not supplied',
+    publisher: isLatinScriptText(rawPublisher) ? rawPublisher : 'Publisher not supplied',
     url: `https://doi.org/${encodeURI(doi)}`,
     ...(excerpt ? { excerpt } : {}),
   };

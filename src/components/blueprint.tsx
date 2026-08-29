@@ -1,4 +1,5 @@
 import type { Finding, FoundryWorkspace, TraceNode } from '../domain/types';
+import { isEnglishFinding } from '../language/english-only';
 
 interface BlueprintViewProps {
   workspace: FoundryWorkspace;
@@ -19,11 +20,14 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport }: Blue
   const candidate = workspace.candidates.find((item) => item.id === blueprint.candidateId)!;
   const proofs = blueprint.proofFindingIds
     .map((id) => workspace.findings.find((finding) => finding.id === id))
-    .filter((finding): finding is Finding => Boolean(finding));
+    .filter((finding): finding is Finding => Boolean(finding))
+    .filter(isEnglishFinding);
   const counters = blueprint.counterEvidenceIds
     .map((id) => workspace.findings.find((finding) => finding.id === id))
-    .filter((finding): finding is Finding => Boolean(finding));
-  const studyCount = new Set(workspace.findings.map((finding) => finding.sourceId)).size;
+    .filter((finding): finding is Finding => Boolean(finding))
+    .filter(isEnglishFinding);
+  const visibleFindings = workspace.findings.filter(isEnglishFinding);
+  const studyCount = new Set(visibleFindings.map((finding) => finding.sourceId)).size;
 
   return (
     <section className="blueprint-view decision-report" aria-label="Proof-Carrying Idea Blueprint">
@@ -76,7 +80,7 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport }: Blue
             </article>
           ))}
         </div>
-        <a className="report-source-link" href="#research-ledger">Review all {workspace.findings.length} research findings ↓</a>
+        <a className="report-source-link" href="#research-ledger">Review all {visibleFindings.length} research findings ↓</a>
       </section>
 
       <section className="report-risks" id="risks">

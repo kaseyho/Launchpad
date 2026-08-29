@@ -1,4 +1,5 @@
 import type { Finding, FoundryWorkspace } from '../domain/types';
+import { isEnglishFinding } from '../language/english-only';
 
 function findingLabel(finding: Finding) {
   return finding.evidenceType === 'counter_evidence' ? 'Caution' : 'Support';
@@ -40,7 +41,9 @@ function FindingGroup({ title, findings, offset }: { title: string; findings: Fi
 }
 
 export function ResearchFindings({ workspace }: { workspace: FoundryWorkspace }) {
-  const findings = workspace.findings.filter((finding) => finding.reviewStatus === 'qualified' || finding.reviewStatus === 'accepted');
+  const findings = workspace.findings.filter((finding) => (
+    (finding.reviewStatus === 'qualified' || finding.reviewStatus === 'accepted') && isEnglishFinding(finding)
+  ));
   const support = findings.filter((finding) => finding.evidenceType !== 'counter_evidence');
   const cautions = findings.filter((finding) => finding.evidenceType === 'counter_evidence');
   return (

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FoundryWorkspace } from '../domain/types';
+import { isEnglishFinding } from '../language/english-only';
 
 interface EvidenceInspectorProps {
   workspace: FoundryWorkspace;
@@ -9,13 +10,14 @@ interface EvidenceInspectorProps {
 }
 
 export function EvidenceInspector({ workspace, open, onClose, onReview }: EvidenceInspectorProps) {
-  const [selectedId, setSelectedId] = useState(workspace.findings[0]?.id);
+  const visibleFindings = workspace.findings.filter(isEnglishFinding);
+  const [selectedId, setSelectedId] = useState(visibleFindings[0]?.id);
   if (!open) return null;
 
-  const resolvedSelectedId = workspace.findings.some((finding) => finding.id === selectedId)
+  const resolvedSelectedId = visibleFindings.some((finding) => finding.id === selectedId)
     ? selectedId
-    : workspace.findings[0]?.id;
-  const finding = workspace.findings.find((item) => item.id === resolvedSelectedId) ?? workspace.findings[0];
+    : visibleFindings[0]?.id;
+  const finding = visibleFindings.find((item) => item.id === resolvedSelectedId) ?? visibleFindings[0];
   const source = finding && workspace.sources.find((item) => item.id === finding.sourceId);
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
@@ -26,7 +28,7 @@ export function EvidenceInspector({ workspace, open, onClose, onReview }: Eviden
         </header>
         <div className="inspector-layout">
           <nav className="finding-list" aria-label="Findings">
-            {workspace.findings.map((item) => (
+            {visibleFindings.map((item) => (
               <button key={item.id} type="button" data-selected={item.id === finding?.id} onClick={() => setSelectedId(item.id)}>
                 <span data-status={item.reviewStatus}>{item.reviewStatus.toUpperCase()}</span>
                 <strong>{item.normalizedClaim}</strong>

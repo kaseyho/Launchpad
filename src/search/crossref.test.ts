@@ -26,4 +26,12 @@ describe('Crossref metadata mapping', () => {
     expect(mapCrossrefWork({ title: ['No DOI'] })).toBeUndefined();
     expect(mapCrossrefWork({ DOI: '10.1000/no-title' })).toBeUndefined();
   });
+
+  it('rejects non-English abstracts before they become report content', () => {
+    expect(mapCrossrefWork({
+      DOI: '10.1000/greek',
+      title: ['AI-enabled management of autonomous systems'],
+      abstract: '<jats:p>Η σύγχρονη εποχή χαρακτηρίζεται από την ανάπτυξη της αυτοματοποίησης.</jats:p>',
+    })).toBeUndefined();
+  });
 });

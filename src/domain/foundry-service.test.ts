@@ -269,4 +269,17 @@ describe('FoundryService', () => {
     });
     expect(foundry.getWorkspace().findings).toHaveLength(0);
   });
+
+  it('rejects a non-English source before it can enter a report', () => {
+    const foundry = createInMemoryFoundry();
+    const result = foundry.service.importSource({
+      title: 'Συστήματα αυτοματοποίησης',
+      sourceType: 'paper',
+      url: 'https://example.org/greek-study',
+      excerpt: 'Η σύγχρονη εποχή χαρακτηρίζεται από την ανάπτυξη της αυτοματοποίησης.',
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'ENGLISH_ONLY_SOURCE' } });
+    expect(foundry.getWorkspace().sources).toHaveLength(0);
+  });
 });

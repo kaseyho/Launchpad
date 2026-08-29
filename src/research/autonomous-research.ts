@@ -1,6 +1,7 @@
 import type { FoundryService } from '../domain/foundry-service';
 import type { Actor, FoundryWorkspace, IdeaCandidateProposal, ServiceResult, SourceLane } from '../domain/types';
 import type { AcademicSearchResult } from '../search/crossref';
+import { isEnglishText } from '../language/english-only';
 
 export type AutonomousResearchPhase =
   | 'idle'
@@ -138,7 +139,10 @@ function chooseResearchHits(hits: ResearchHit[]) {
   const seenDois = new Set<string>();
   const selected: ResearchHit[] = [];
   const addLane = (lane: SourceLane, limit: number) => {
-    const laneHits = hits.filter((hit) => hit.lane === lane && hit.result.excerpt && hit.result.excerpt.trim().length >= 40);
+    const laneHits = hits.filter((hit) => hit.lane === lane
+      && hit.result.excerpt
+      && hit.result.excerpt.trim().length >= 40
+      && isEnglishText(`${hit.result.title} ${hit.result.excerpt}`));
     const publishers = new Set<string>();
     for (const hit of laneHits) {
       if (selected.length >= 7 || selected.filter((item) => item.lane === lane).length >= limit || seenDois.has(hit.result.doi)) continue;
