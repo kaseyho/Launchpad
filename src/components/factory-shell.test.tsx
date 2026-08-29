@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FactoryShell } from './factory-shell';
+import { createSubscriptionState, DEFAULT_PLAN_QUOTES, SUBSCRIPTION_STORAGE_KEY } from '../subscription/subscription';
 
 const CUSTOM_PROBLEM = 'Independent restaurants lose new staff during first-week training because guidance is inconsistent across managers.';
 
@@ -25,7 +26,22 @@ function mockAcademicSearch() {
   }));
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  Object.defineProperty(window, 'localStorage', { configurable: true, value: undefined });
+});
+
+function installSubscriptionStorage(value: string | null) {
+  const values = new Map<string, string>();
+  if (value) values.set(SUBSCRIPTION_STORAGE_KEY, value);
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, next: string) => values.set(key, next),
+    },
+  });
+}
 
 describe('FactoryShell autonomous workflow', () => {
   it('requires only one problem statement and keeps WebMCP optional', async () => {
@@ -38,10 +54,10 @@ describe('FactoryShell autonomous workflow', () => {
     expect(screen.getByText(/no api key, source hunting, or manual research workflow/i)).toBeVisible();
     expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/optional agent control/i);
     expect(screen.queryByRole('dialog', { name: /activity/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('dialog', { name: /sustainable launchpad/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /set your research capacity/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /plans/i }));
-    expect(screen.getByRole('dialog', { name: /sustainable launchpad/i })).toBeVisible();
+    expect(screen.getByRole('dialog', { name: /set your research capacity/i })).toBeVisible();
     await user.click(screen.getByRole('button', { name: /close plans/i }));
 
     await user.click(screen.getByRole('button', { name: /activity/i }));
@@ -63,5 +79,22 @@ describe('FactoryShell autonomous workflow', () => {
     expect(screen.getByRole('region', { name: /research findings/i })).toHaveTextContent(/7 findings/i);
     expect(screen.getAllByRole('link', { name: /open original research/i })).toHaveLength(7);
     expect(screen.queryByRole('button', { name: /plan research|add source|accept evidence/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: /plans/i })).toHaveTextContent(/explorer · 2\/3/i));
   }, 8000);
+
+  it('enforces the configured allowance before starting human or agent research', async () => {
+    const exhausted = createSubscriptionState(DEFAULT_PLAN_QUOTES.explorer, new Date(), 3);
+    installSubscriptionStorage(JSON.stringify(exhausted));
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const user = userEvent.setup();
+    render(<FactoryShell />);
+
+    await user.type(screen.getByRole('textbox', { name: /what problem should launchpad solve/i }), CUSTOM_PROBLEM);
+    await user.click(screen.getByRole('button', { name: /research this problem/i }));
+
+    expect(await screen.findByText(/monthly research allowance reached/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /change research allowance/i })).toBeVisible();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
 });

@@ -18,6 +18,7 @@ export interface AutonomousResearchProgress {
   progress: number;
   message: string;
   error?: string;
+  errorCode?: 'usage_limit';
 }
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;

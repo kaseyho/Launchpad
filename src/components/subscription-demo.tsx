@@ -1,70 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  DEFAULT_PLAN_QUOTES,
+  PLAN_DEFINITIONS,
+  quotePlan,
+  remainingResearchRuns,
+  type PlanId,
+  type PlanQuote,
+  type SubscriptionState,
+} from '../subscription/subscription';
 
-type PlanId = 'explorer' | 'builder' | 'studio';
-
-type Plan = {
-  id: PlanId;
-  name: string;
-  price: number;
-  audience: string;
-  limit: string;
-  features: string[];
-};
-
-const STORAGE_KEY = 'launchpad.subscription-demo.v1';
-
-const plans: Plan[] = [
-  {
-    id: 'explorer',
-    name: 'Explorer',
-    price: 0,
-    audience: 'For occasional problem framing',
-    limit: '3 research runs / month',
-    features: ['One active workspace', 'Citation-linked findings', 'Evidence and limitation report'],
-  },
-  {
-    id: 'builder',
-    name: 'Builder',
-    price: 24,
-    audience: 'For founders and product leads',
-    limit: '40 research runs / month',
-    features: ['Saved project history', 'Markdown and JSON exports', 'Private problem statements'],
-  },
-  {
-    id: 'studio',
-    name: 'Studio',
-    price: 89,
-    audience: 'For small innovation teams',
-    limit: '200 shared runs / month',
-    features: ['Five workspace seats', 'Shared evidence libraries', 'Review and audit controls'],
-  },
-];
-
-function isPlanId(value: string | null): value is PlanId {
-  return plans.some((plan) => plan.id === value);
+function priceLabel(price: number) {
+  return price === 0 ? '$0' : `$${price}`;
 }
 
-function priceLabel(plan: Plan) {
-  return plan.price === 0 ? '$0' : `$${plan.price}`;
+function formatPeriodEnd(isoTimestamp: string) {
+  return new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(isoTimestamp));
 }
 
-function getDemoStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    return window.localStorage ?? undefined;
-  } catch {
-    return undefined;
-  }
+function matchesQuote(subscription: SubscriptionState, quote: PlanQuote) {
+  return subscription.planId === quote.planId
+    && subscription.monthlyRuns === quote.monthlyRuns
+    && subscription.seats === quote.seats;
 }
 
-export function SubscriptionDemo({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [selectedPlanId, setSelectedPlanId] = useState<PlanId>('builder');
-  const [activePlanId, setActivePlanId] = useState<PlanId>(() => {
-    const savedPlan = getDemoStorage()?.getItem(STORAGE_KEY) ?? null;
-    return isPlanId(savedPlan) ? savedPlan : 'explorer';
-  });
+export function SubscriptionDemo({
+  open,
+  onClose,
+  subscription,
+  onApply,
+}: {
+  open: boolean;
+  onClose: () => void;
+  subscription: SubscriptionState;
+  onApply: (quote: PlanQuote) => void;
+}) {
+  const [selectedPlanId, setSelectedPlanId] = useState<PlanId>(subscription.planId === 'explorer' ? 'builder' : subscription.planId);
+  const selectedInitial = subscription.planId === selectedPlanId ? subscription : DEFAULT_PLAN_QUOTES[selectedPlanId];
+  const [selectedRuns, setSelectedRuns] = useState(selectedInitial.monthlyRuns);
+  const [selectedSeats, setSelectedSeats] = useState(selectedInitial.seats);
 
   useEffect(() => {
     if (!open) return;
@@ -82,19 +57,25 @@ export function SubscriptionDemo({ open, onClose }: { open: boolean; onClose: ()
 
   if (!open) return null;
 
-  const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[1];
-  const activePlan = plans.find((plan) => plan.id === activePlanId) ?? plans[0];
-  const isSelectedActive = selectedPlan.id === activePlan.id;
+  const selectedPlan = PLAN_DEFINITIONS[selectedPlanId];
+  const activePlan = PLAN_DEFINITIONS[subscription.planId];
+  const selectedQuote = quotePlan(selectedPlanId, selectedRuns, selectedSeats);
+  const isSelectedActive = matchesQuote(subscription, selectedQuote);
+  const remaining = remainingResearchRuns(subscription);
+  const usagePercent = Math.min(100, Math.round((subscription.runsUsed / subscription.monthlyRuns) * 100));
+  const perRun = selectedQuote.monthlyPrice === 0 ? 0 : selectedQuote.monthlyPrice / selectedQuote.monthlyRuns;
+  const scenarioMrr = selectedQuote.monthlyPrice * 100;
+  const pricingFormula = selectedPlanId === 'builder'
+    ? '$12 base includes 10 runs; each additional run adds $0.40.'
+    : selectedPlanId === 'studio'
+      ? '$49 base includes 60 runs and 3 seats; additional runs add $0.20 and seats add $6.'
+      : 'Explorer is fixed at 3 research runs and one seat for $0.';
 
-  const activateDemoPlan = () => {
-    getDemoStorage()?.setItem(STORAGE_KEY, selectedPlan.id);
-    setActivePlanId(selectedPlan.id);
-  };
-
-  const resetDemo = () => {
-    getDemoStorage()?.removeItem(STORAGE_KEY);
-    setActivePlanId('explorer');
-    setSelectedPlanId('builder');
+  const selectPlan = (planId: PlanId) => {
+    const next = subscription.planId === planId ? subscription : DEFAULT_PLAN_QUOTES[planId];
+    setSelectedPlanId(planId);
+    setSelectedRuns(next.monthlyRuns);
+    setSelectedSeats(next.seats);
   };
 
   return (
@@ -109,79 +90,137 @@ export function SubscriptionDemo({ open, onClose }: { open: boolean; onClose: ()
       >
         <header className="subscription-header">
           <div>
-            <span>Revenue model / interactive prototype</span>
-            <h2 id="subscription-title">A sustainable LaunchPad</h2>
-            <p id="subscription-description">Compare the proposed plans, then simulate an upgrade without creating an account or entering payment details.</p>
+            <span>Plans / live product controls</span>
+            <h2 id="subscription-title">Set your research capacity</h2>
+            <p id="subscription-description">Choose how many complete problem-to-solution runs LaunchPad should provide each month. The selected allowance is enforced across human and WebMCP runs.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close plans">Close</button>
         </header>
 
         <div className="subscription-demo-notice" role="note">
-          <strong>Demo mode</strong>
-          <span>No card is charged. No subscription or account is created. Your selection is stored only in this browser.</span>
+          <strong>Evaluation billing</strong>
+          <span>The usage meter and limits work now. Payment collection is not connected, so no card is charged; this browser holds the evaluation account.</span>
         </div>
+
+        <section className="subscription-usage" aria-label="Current research allowance">
+          <div>
+            <span>Current plan</span>
+            <strong>{activePlan.name}</strong>
+          </div>
+          <div>
+            <span>Runs remaining</span>
+            <strong>{remaining} / {subscription.monthlyRuns}</strong>
+          </div>
+          <div>
+            <span>Monthly configuration</span>
+            <strong>{priceLabel(subscription.monthlyPrice)} · {subscription.seats} {subscription.seats === 1 ? 'seat' : 'seats'}</strong>
+          </div>
+          <div>
+            <span>Allowance resets</span>
+            <strong>{formatPeriodEnd(subscription.periodEnd)}</strong>
+          </div>
+          <div className="subscription-usage-track" aria-label={`${usagePercent}% of research allowance used`}><span style={{ width: `${usagePercent}%` }} /></div>
+        </section>
 
         <section className="subscription-section" aria-labelledby="plan-comparison-title">
           <div className="subscription-section-heading">
             <div>
-              <span>01 / proposed offering</span>
-              <h3 id="plan-comparison-title">Price the completed research run</h3>
+              <span>01 / choose operating mode</span>
+              <h3 id="plan-comparison-title">The run is the value unit</h3>
             </div>
-            <p>Usage follows LaunchPad&apos;s main cost and value unit: one problem researched into one evidence-backed solution.</p>
+            <p>One run searches connected sources, extracts findings, synthesizes a solution, stress-tests it, and produces the cited report.</p>
           </div>
 
-          <div className="subscription-plans" role="radiogroup" aria-label="Proposed LaunchPad plans">
-            {plans.map((plan) => (
-              <button
-                key={plan.id}
-                type="button"
-                role="radio"
-                aria-checked={selectedPlan.id === plan.id}
-                data-selected={selectedPlan.id === plan.id}
-                data-active={activePlan.id === plan.id}
-                onClick={() => setSelectedPlanId(plan.id)}
-              >
-                <span className="subscription-plan-select" aria-hidden="true" />
-                <span className="subscription-plan-name">
-                  <strong>{plan.name}</strong>
-                  <small>{plan.audience}</small>
-                </span>
-                <span className="subscription-plan-price">
-                  <strong>{priceLabel(plan)}</strong>
-                  <small>{plan.price === 0 ? 'forever' : '/ month'}</small>
-                </span>
-                <span className="subscription-plan-limit">{plan.limit}</span>
-                <span className="subscription-plan-features">{plan.features.join(' · ')}</span>
-                {activePlan.id === plan.id && <em>Current demo plan</em>}
-              </button>
-            ))}
+          <div className="subscription-plans" role="radiogroup" aria-label="LaunchPad plans">
+            {(Object.keys(PLAN_DEFINITIONS) as PlanId[]).map((planId) => {
+              const plan = PLAN_DEFINITIONS[planId];
+              const displayQuote = subscription.planId === planId ? subscription : DEFAULT_PLAN_QUOTES[planId];
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selectedPlan.id === plan.id}
+                  data-selected={selectedPlan.id === plan.id}
+                  data-active={subscription.planId === plan.id}
+                  onClick={() => selectPlan(plan.id)}
+                >
+                  <span className="subscription-plan-select" aria-hidden="true" />
+                  <span className="subscription-plan-name">
+                    <strong>{plan.name}</strong>
+                    <small>{plan.audience}</small>
+                  </span>
+                  <span className="subscription-plan-price">
+                    <strong>{priceLabel(displayQuote.monthlyPrice)}</strong>
+                    <small>{displayQuote.monthlyPrice === 0 ? 'forever' : '/ month at shown volume'}</small>
+                  </span>
+                  <span className="subscription-plan-limit">{displayQuote.monthlyRuns} runs · {displayQuote.seats} {displayQuote.seats === 1 ? 'seat' : 'seats'}</span>
+                  <span className="subscription-plan-features">{plan.features.join(' · ')}</span>
+                  {subscription.planId === plan.id && <em>Current product plan</em>}
+                </button>
+              );
+            })}
           </div>
         </section>
 
-        <section className="subscription-section subscription-checkout" aria-labelledby="checkout-review-title">
+        <section className="subscription-section subscription-configurator" aria-labelledby="capacity-title">
           <div className="subscription-section-heading">
             <div>
-              <span>02 / checkout review</span>
-              <h3 id="checkout-review-title">Review before activation</h3>
+              <span>02 / control the price</span>
+              <h3 id="capacity-title">Match capacity to real usage</h3>
             </div>
+            <p>The quote is calculated from the cost-bearing product inputs. There are no hidden overages: research stops when the included allowance reaches zero.</p>
           </div>
 
-          <div className="subscription-review-grid">
-            <dl>
-              <div><dt>Selected plan</dt><dd>{selectedPlan.name}</dd></div>
-              <div><dt>Due today</dt><dd>{priceLabel(selectedPlan)} <small>demo</small></dd></div>
-              <div><dt>Billing</dt><dd>{selectedPlan.price === 0 ? 'No renewal' : `$${selectedPlan.price} monthly`}</dd></div>
-              <div><dt>Terms</dt><dd>{selectedPlan.price === 0 ? 'Free plan' : 'Cancel anytime · no annual lock-in'}</dd></div>
-            </dl>
+          <div className="subscription-control-grid">
+            <div className="subscription-sliders">
+              <label htmlFor="monthly-runs">
+                <span>Complete research runs / month</span>
+                <output htmlFor="monthly-runs">{selectedQuote.monthlyRuns}</output>
+              </label>
+              <input
+                id="monthly-runs"
+                type="range"
+                min={selectedPlan.minRuns}
+                max={selectedPlan.maxRuns}
+                step={selectedPlan.runStep}
+                value={selectedQuote.monthlyRuns}
+                disabled={selectedPlan.id === 'explorer'}
+                onChange={(event) => setSelectedRuns(Number(event.target.value))}
+              />
+              <div className="subscription-range-labels"><span>{selectedPlan.minRuns}</span><span>{selectedPlan.maxRuns}</span></div>
 
-            <div className="subscription-confirm">
-              <span>Active now</span>
-              <strong>{activePlan.name}</strong>
-              <p>{isSelectedActive ? 'This plan is already active in the prototype.' : `This simulates switching to ${selectedPlan.name}. No network request will be made.`}</p>
-              <button type="button" onClick={activateDemoPlan} disabled={isSelectedActive}>
-                {isSelectedActive ? `${selectedPlan.name} demo active` : `Simulate ${selectedPlan.name} plan — ${priceLabel(selectedPlan)}${selectedPlan.price === 0 ? '' : '/mo'}`}
+              <label htmlFor="plan-seats">
+                <span>Workspace seats</span>
+                <output htmlFor="plan-seats">{selectedQuote.seats}</output>
+              </label>
+              <input
+                id="plan-seats"
+                type="range"
+                min={selectedPlan.minSeats}
+                max={selectedPlan.maxSeats}
+                step={selectedPlan.seatStep}
+                value={selectedQuote.seats}
+                disabled={selectedPlan.maxSeats === selectedPlan.minSeats}
+                onChange={(event) => setSelectedSeats(Number(event.target.value))}
+              />
+              <div className="subscription-range-labels"><span>{selectedPlan.minSeats}</span><span>{selectedPlan.maxSeats}</span></div>
+              <p className="subscription-pricing-formula"><strong>Formula</strong>{pricingFormula}</p>
+            </div>
+
+            <div className="subscription-live-quote" aria-live="polite">
+              <span>Live monthly configuration</span>
+              <strong>{priceLabel(selectedQuote.monthlyPrice)}<small>/ month</small></strong>
+              <dl>
+                <div><dt>Plan</dt><dd>{selectedPlan.name}</dd></div>
+                <div><dt>Included</dt><dd>{selectedQuote.monthlyRuns} complete runs</dd></div>
+                <div><dt>Access</dt><dd>{selectedQuote.seats} {selectedQuote.seats === 1 ? 'seat' : 'seats'}</dd></div>
+                <div><dt>Effective rate</dt><dd>{selectedQuote.monthlyPrice === 0 ? '$0' : `$${perRun.toFixed(2)}`} / included run</dd></div>
+                <div><dt>Overage</dt><dd>Blocked at limit · no surprise fee</dd></div>
+              </dl>
+              <button type="button" onClick={() => onApply(selectedQuote)} disabled={isSelectedActive}>
+                {isSelectedActive ? 'Current product configuration' : `Apply ${selectedPlan.name} rules to LaunchPad — ${priceLabel(selectedQuote.monthlyPrice)}/mo`}
               </button>
-              {activePlan.id !== 'explorer' && <button className="subscription-reset" type="button" onClick={resetDemo}>Reset subscription demo</button>}
             </div>
           </div>
         </section>
@@ -189,17 +228,17 @@ export function SubscriptionDemo({ open, onClose }: { open: boolean; onClose: ()
         <section className="subscription-section subscription-business" aria-labelledby="business-case-title">
           <div className="subscription-section-heading">
             <div>
-              <span>03 / revenue hypothesis</span>
-              <h3 id="business-case-title">Show the model, not fake traction</h3>
+              <span>03 / revenue logic</span>
+              <h3 id="business-case-title">The economics move with usage</h3>
             </div>
-            <p>These figures are an illustrative scenario for judging, not a forecast or evidence of paying customers.</p>
+            <p>This is an illustrative revenue scenario, not paying-customer traction. The product behavior above is functional; external payment collection is the remaining production integration.</p>
           </div>
           <div className="subscription-math" aria-label="Illustrative monthly recurring revenue scenario">
-            <div><span>250 Builders</span><strong>250 × $24</strong><em>$6,000 MRR</em></div>
-            <div><span>50 Studios</span><strong>50 × $89</strong><em>$4,450 MRR</em></div>
-            <div className="subscription-math-total"><span>Illustrative total</span><strong>300 customers</strong><em>$10,450 MRR</em></div>
+            <div><span>Selected configuration</span><strong>{selectedQuote.monthlyRuns} runs · {selectedQuote.seats} {selectedQuote.seats === 1 ? 'seat' : 'seats'}</strong><em>{priceLabel(selectedQuote.monthlyPrice)} / mo</em></div>
+            <div><span>100 customers</span><strong>100 × {priceLabel(selectedQuote.monthlyPrice)}</strong><em>${scenarioMrr.toLocaleString()} MRR</em></div>
+            <div className="subscription-math-total"><span>Metered product proof</span><strong>Human + WebMCP runs share one allowance</strong><em>Enforced now</em></div>
           </div>
-          <p className="subscription-hypothesis"><strong>Conversion trigger:</strong> upgrade when a user needs repeat research, retained project history, or team review. <strong>Cost control:</strong> cap research runs by plan because external research retrieval and synthesis scale with usage.</p>
+          <p className="subscription-hypothesis"><strong>Conversion trigger:</strong> upgrade when repeat research or collaboration needs exceed the current allowance. <strong>Cost control:</strong> LaunchPad blocks the next research run at the limit instead of creating an unapproved overage.</p>
         </section>
       </aside>
     </div>

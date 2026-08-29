@@ -2889,10 +2889,13 @@ The project is ready when all of the following are true:
 ## Revenue-model demonstration
 
 - The core product flow remains one input: the problem statement.
-- A separate Plans drawer demonstrates the proposed Free, Builder, and Studio packaging.
-- The upgrade review shows exact price, billing interval, renewal, cancellation, and usage limits beside the action.
-- The activation is explicitly a simulation: it creates no account, accepts no payment details, and makes no billing request.
-- Demo plan state is reversible and stored only in the browser so it remains available without an external database.
+- A separate Plans drawer controls the Explorer, Builder, and Studio product packaging.
+- Builder pricing responds to the selected monthly research-run allowance. Studio pricing responds to both shared runs and workspace seats.
+- Applying a configuration changes the product's active allowance immediately.
+- Every completed human or WebMCP research run consumes the same allowance; failed and cancelled runs do not.
+- LaunchPad blocks new research at zero remaining runs and provides a direct recovery path to Plans.
+- Evaluation state is stored in the current browser so judging does not depend on an external database or payment credential.
+- Payment collection and cross-device account persistence are explicitly described as production integrations, not simulated as completed systems.
 - Revenue math is labeled as an illustrative hypothesis, never as paying-customer traction.
     
 

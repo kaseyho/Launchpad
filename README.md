@@ -8,11 +8,11 @@ LaunchPad is an autonomous research-to-solution web app built for the [WebMCP Ch
 
 No API key, source upload, prompt copying, or manual research workflow is required.
 
-## Subscription strategy demo
+## Functional subscription strategy
 
-The header's **Plans** control opens an interactive revenue-model prototype. It compares a proposed Free, Builder, and Studio offering; makes usage limits, renewal terms, and cancellation clear; and lets a judge simulate activation. The demo never asks for a card, creates an account, or makes a billing request. Its reversible state is stored only in the current browser, so the judging path does not depend on Supabase, Stripe, or a dormant backend.
+The header's **Plans** control manages a working product allowance. Explorer includes three complete research runs per month. Builder lets a user choose 10–100 runs, while Studio lets a team choose 60–500 shared runs and 3–15 seats. LaunchPad calculates the monthly quote from those inputs, applies the configuration to the product, records each completed human or WebMCP run, and blocks the next run when the allowance reaches zero.
 
-The pricing and monthly recurring revenue figures are explicitly presented as hypotheses, not customer traction. A production version could connect the same plan-selection flow to an authenticated billing provider after pricing and willingness-to-pay have been validated.
+For judging, the evaluation account is stored in the current browser so the core demo has no dependency on Supabase inactivity or payment credentials. Usage and entitlement behavior are functional; external payment collection and cross-device account persistence remain explicit production integrations. Revenue scenarios are labeled as hypotheses, not customer traction.
 
 ## Product flow
 

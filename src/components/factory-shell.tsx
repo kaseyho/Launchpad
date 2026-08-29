@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityDrawer } from './activity-drawer';
 import { BlueprintView } from './blueprint';
 import { EvidenceInspector } from './evidence-inspector';
@@ -10,6 +10,7 @@ import { ResearchFindings } from './research-findings';
 import { SubscriptionDemo } from './subscription-demo';
 import { WebMCPRunRail } from './webmcp-run-rail';
 import { useFoundry } from '../hooks/use-foundry';
+import { useSubscription } from '../hooks/use-subscription';
 import { useWebMCP } from '../hooks/use-webmcp';
 import type { FoundryWorkspace } from '../domain/types';
 import { getStageProgress } from '../presentation/factory-stages';
@@ -31,7 +32,12 @@ function stageTitle(stage: FoundryWorkspace['stage']) {
 }
 
 export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryWorkspace }) {
-  const foundry = useFoundry(initialWorkspace);
+  const subscription = useSubscription();
+  const allowance = useMemo(() => ({
+    check: subscription.checkResearchAllowance,
+    recordCompletedRun: subscription.recordCompletedRun,
+  }), [subscription.checkResearchAllowance, subscription.recordCompletedRun]);
+  const foundry = useFoundry(initialWorkspace, allowance);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
@@ -71,7 +77,7 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
             aria-expanded={subscriptionOpen}
             onClick={() => setSubscriptionOpen(true)}
           >
-            Plans <span>Demo</span>
+            Plans <span>{subscription.subscription.planId} · {subscription.remainingRuns}/{subscription.subscription.monthlyRuns}</span>
           </button>
           <button
             ref={activityButtonRef}
@@ -97,6 +103,10 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
           onStartResearch={foundry.startResearch}
           onRetry={foundry.retryResearch}
           onReset={foundry.resetWorkspace}
+          planName={subscription.subscription.planId}
+          remainingRuns={subscription.remainingRuns}
+          monthlyRuns={subscription.subscription.monthlyRuns}
+          onOpenPlans={() => setSubscriptionOpen(true)}
         />
         <div className="launch-visual">
           <InteractiveFactory workspace={workspace} />
@@ -123,7 +133,12 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
         exportFilename={foundry.lastExport?.filename}
         onDownloadExport={foundry.downloadLastExport}
       />
-      <SubscriptionDemo open={subscriptionOpen} onClose={closeSubscription} />
+      <SubscriptionDemo
+        open={subscriptionOpen}
+        onClose={closeSubscription}
+        subscription={subscription.subscription}
+        onApply={subscription.configurePlan}
+      />
       <EvidenceInspector
         workspace={workspace}
         open={inspectorOpen}

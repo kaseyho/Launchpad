@@ -8,6 +8,10 @@ interface LaunchBriefProps {
   onStartResearch: (problemStatement: string) => Promise<boolean>;
   onRetry: () => void;
   onReset: () => void;
+  planName: string;
+  remainingRuns: number;
+  monthlyRuns: number;
+  onOpenPlans: () => void;
 }
 
 const RUN_STEPS: Array<{ phase: AutonomousResearchPhase; label: string }> = [
@@ -24,7 +28,7 @@ function phaseIndex(phase: AutonomousResearchPhase) {
   return RUN_STEPS.findIndex((step) => step.phase === phase);
 }
 
-export function LaunchBrief({ workspace, researchRun, onStartResearch, onRetry, onReset }: LaunchBriefProps) {
+export function LaunchBrief({ workspace, researchRun, onStartResearch, onRetry, onReset, planName, remainingRuns, monthlyRuns, onOpenPlans }: LaunchBriefProps) {
   const [problemStatement, setProblemStatement] = useState('');
   const [problemError, setProblemError] = useState('');
   const running = !['idle', 'complete', 'error'].includes(researchRun.phase);
@@ -63,7 +67,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onRetry, 
             required
           />
           <div className="problem-entry-footer">
-            <span>{problemStatement.length} / 1200</span>
+            <span>{planName.toUpperCase()} / {remainingRuns} OF {monthlyRuns} RUNS LEFT</span>
             <button type="submit">Research this problem <span aria-hidden="true">→</span></button>
           </div>
           {problemError && <p className="problem-entry-error" role="alert">{problemError}</p>}
@@ -105,7 +109,10 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onRetry, 
       </div>
 
       <div className="run-actions">
-        {researchRun.phase === 'error' && <button type="button" className="run-retry" onClick={onRetry}>Retry research →</button>}
+        {researchRun.phase === 'error' && researchRun.errorCode === 'usage_limit' && (
+          <button type="button" className="run-retry" onClick={onOpenPlans}>Change research allowance →</button>
+        )}
+        {researchRun.phase === 'error' && researchRun.errorCode !== 'usage_limit' && <button type="button" className="run-retry" onClick={onRetry}>Retry research →</button>}
         {researchRun.phase === 'complete' && <a className="run-result-link" href="#launch-result">See the solution and research ↓</a>}
         {!running && <button type="button" className="run-reset" onClick={() => {
           if (window.confirm('Research a new problem? The current result will be cleared.')) onReset();
