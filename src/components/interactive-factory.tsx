@@ -133,11 +133,11 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [webglFailed, setWebglFailed] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<FactoryStationKey>(() => getActiveStationKey(workspace.stage));
-
-  useEffect(() => {
-    setSelectedKey(getActiveStationKey(workspace.stage));
-  }, [workspace.stage]);
+  const [selection, setSelection] = useState<{ stage: FoundryWorkspace['stage']; key: FactoryStationKey }>(() => ({
+    stage: workspace.stage,
+    key: getActiveStationKey(workspace.stage),
+  }));
+  const selectedKey = selection.stage === workspace.stage ? selection.key : getActiveStationKey(workspace.stage);
 
   const selectedStation = useMemo(
     () => FACTORY_STATIONS.find((station) => station.key === selectedKey) ?? FACTORY_STATIONS[0],
@@ -150,15 +150,16 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
     const frame = frameRef.current;
     if (!canvas || !frame) return;
 
+    let cancelled = false;
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
     } catch {
-      setWebglFailed(true);
-      return;
+      queueMicrotask(() => { if (!cancelled) setWebglFailed(true); });
+      return () => { cancelled = true; };
     }
 
-    setWebglFailed(false);
+    queueMicrotask(() => { if (!cancelled) setWebglFailed(false); });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -245,7 +246,7 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(stationGroups, true)[0];
       const stationKey = findStationKey(hit?.object ?? null);
-      if (stationKey) setSelectedKey(stationKey);
+      if (stationKey) setSelection({ stage: workspace.stage, key: stationKey });
     };
     canvas.addEventListener('pointerup', onPointerUp);
 
@@ -285,6 +286,7 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
     render();
 
     return () => {
+      cancelled = true;
       window.cancelAnimationFrame(frameId);
       resizeObserver.disconnect();
       intersectionObserver?.disconnect();
@@ -319,7 +321,7 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
           <button
             type="button"
             key={station.key}
-            onClick={() => setSelectedKey(station.key)}
+            onClick={() => setSelection({ stage: workspace.stage, key: station.key })}
             aria-label={`${station.name}, ${getStationMetric(workspace, station.key).value} ${getStationMetric(workspace, station.key).label}`}
             aria-pressed={selectedKey === station.key}
             data-state={getStationState(workspace.stage, station.key)}

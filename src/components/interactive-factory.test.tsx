@@ -18,7 +18,7 @@ describe('InteractiveFactory', () => {
     render(<InteractiveFactory workspace={createInitialWorkspace()} />);
 
     expect(screen.getByLabelText(/interactive research factory/i)).toBeVisible();
-    expect(screen.getByText(/3d unavailable/i)).toBeVisible();
+    expect(await screen.findByText(/3d unavailable/i)).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: /evidence lab/i }));
 
