@@ -2,6 +2,26 @@ import { createInMemoryFoundry } from '../domain/foundry-service';
 import { registerFoundryTools, type ModelContextLike, type WebMCPToolDefinition } from './register-tools';
 
 describe('LaunchPad WebMCP registration', () => {
+  it('uses the official abort-signal lifecycle and reports when every tool is registered', async () => {
+    const registrations: Array<{ definition: WebMCPToolDefinition; signal?: AbortSignal }> = [];
+    const context: ModelContextLike = {
+      registerTool(definition, options) {
+        registrations.push({ definition, signal: options?.signal });
+        return Promise.resolve();
+      },
+    };
+    const { service } = createInMemoryFoundry();
+
+    const registration = registerFoundryTools(context, service);
+    await registration.ready;
+
+    expect(registrations).toHaveLength(17);
+    expect(registrations.every(({ signal }) => signal && !signal.aborted)).toBe(true);
+
+    registration.unregister();
+    expect(registrations.every(({ signal }) => signal?.aborted)).toBe(true);
+  });
+
   it('registers the one-shot run plus the complete composable control plane with narrow schemas', () => {
     const definitions: WebMCPToolDefinition[] = [];
     const context: ModelContextLike = {

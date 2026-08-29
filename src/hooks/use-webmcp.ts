@@ -24,15 +24,19 @@ export function useWebMCP(
     if (!modelContext) return;
 
     let active = true;
-    const unregister = registerFoundryTools(modelContext, service, {
+    const registration = registerFoundryTools(modelContext, service, {
       onTrace,
       onExport,
       onResearch: (problemStatement) => onResearch(problemStatement, 'agent'),
     });
-    queueMicrotask(() => { if (active) setReady(true); });
+    void registration.ready.then(() => {
+      if (active) setReady(true);
+    }).catch(() => {
+      if (active) setReady(false);
+    });
     return () => {
       active = false;
-      unregister();
+      registration.unregister();
     };
   }, [onExport, onResearch, onTrace, service]);
 

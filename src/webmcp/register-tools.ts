@@ -24,8 +24,16 @@ export interface WebMCPToolDefinition {
 }
 
 export interface ModelContextLike {
-  registerTool: (definition: WebMCPToolDefinition) => void;
+  registerTool: (
+    definition: WebMCPToolDefinition,
+    options?: { signal?: AbortSignal },
+  ) => void | Promise<void>;
   unregisterTool?: (name: string) => void;
+}
+
+export interface WebMCPRegistration {
+  ready: Promise<void>;
+  unregister: () => void;
 }
 
 interface RegisterOptions {
@@ -360,10 +368,18 @@ export function registerFoundryTools(
   modelContext: ModelContextLike,
   service: FoundryService,
   options: RegisterOptions = {},
-) {
+): WebMCPRegistration {
   const definitions = getFoundryToolDefinitions(service, options);
-  for (const definition of definitions) modelContext.registerTool(definition);
-  return () => {
-    for (const definition of definitions) modelContext.unregisterTool?.(definition.name);
+  const controller = new AbortController();
+  const ready = Promise.all(definitions.map(async (definition) => {
+    await modelContext.registerTool(definition, { signal: controller.signal });
+  })).then(() => undefined);
+
+  return {
+    ready,
+    unregister() {
+      controller.abort();
+      for (const definition of definitions) modelContext.unregisterTool?.(definition.name);
+    },
   };
 }

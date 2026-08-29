@@ -48,13 +48,15 @@ describe('FactoryShell autonomous workflow', () => {
     const user = userEvent.setup();
     render(<FactoryShell />);
 
-    expect(screen.getByRole('heading', { name: /state the problem/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /webmcp turns one problem into a cited solution/i })).toBeVisible();
     expect(screen.getByRole('textbox', { name: /what problem should launchpad solve/i })).toBeVisible();
+    expect(screen.getByText(/browser agent calls launchpad's typed tools/i)).toBeVisible();
     expect(screen.getByText(/that is your only step/i)).toBeVisible();
     expect(screen.getByText(/no api key or source hunting/i)).toBeVisible();
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/input open/i);
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/output empty/i);
-    expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/optional agent control/i);
+    expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/the agent calls launchpad/i);
+    expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/manual demo mode/i);
     expect(screen.queryByRole('dialog', { name: /activity/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: /set your research capacity/i })).not.toBeInTheDocument();
 

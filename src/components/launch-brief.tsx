@@ -23,9 +23,9 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
   if (workspace.stage === 'EMPTY' && researchRun.phase === 'idle') {
     return (
       <section className="launch-brief launch-brief-empty" aria-label="Problem brief">
-        <span className="section-kicker">One input / complete research run</span>
-        <h1>State the problem. Get the case for what to build.</h1>
-        <p className="launch-deck">One problem in. One research-backed solution out—with every claim traceable.</p>
+        <span className="section-kicker">WebMCP research factory</span>
+        <h1>WebMCP turns one problem into a cited solution.</h1>
+        <p className="launch-deck">A browser agent calls LaunchPad&apos;s typed tools in this page. The factory and cited report update in the same visible workspace.</p>
 
         <form className="problem-entry" onSubmit={(event) => {
           event.preventDefault();
@@ -66,7 +66,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
 
   return (
     <section className="launch-brief launch-brief-run" aria-label="Research run" aria-live="polite">
-      <span className="section-kicker">Autonomous research run</span>
+      <span className="section-kicker">WebMCP research run</span>
       <h1>{researchRun.phase === 'complete' ? 'Your decision passport is ready.' : researchRun.phase === 'error' ? 'The research run paused.' : 'The factory is building your answer.'}</h1>
       <div className="run-problem">
         <span>Problem submitted</span>
