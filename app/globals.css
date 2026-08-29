@@ -519,6 +519,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .subscription-usage strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 750 12px/1.2 var(--font-geist-mono), monospace; }
 .subscription-usage .subscription-usage-track { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(23,24,36,.14); }
 .subscription-usage-track > span { display: block; width: 0; height: 100%; background: var(--coral); transition: width 180ms steps(5,end); }
+.subscription-application-status { margin: 0; padding: 13px clamp(24px,4vw,54px); border-bottom: 2px solid var(--paper-ink); background: #3656a4; color: var(--paper); font: 650 11px/1.45 var(--font-geist-mono), monospace; }
+.subscription-application-status strong { margin-right: 9px; color: var(--mint); font-weight: 800; text-transform: uppercase; }
 .subscription-configurator { background: #f6e7b6; }
 .subscription-control-grid { display: grid; grid-template-columns: minmax(320px,1fr) minmax(310px,.8fr); border: 3px solid var(--paper-ink); }
 .subscription-sliders { padding: 26px; display: grid; align-content: start; gap: 12px; }
@@ -788,6 +790,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .subscription-header p { display: none; }
   .subscription-demo-notice { padding: 12px 18px; grid-template-columns: 1fr; gap: 5px; }
   .subscription-usage { padding: 20px 18px 24px; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px 12px; }
+  .subscription-application-status { padding: 12px 18px; }
   .subscription-section { padding: 32px 18px; }
   .subscription-section-heading { grid-template-columns: 1fr; gap: 12px; }
   .subscription-plans > button { min-height: 0; padding: 16px 8px; grid-template-columns: 18px minmax(120px,1fr) 72px; gap: 9px; }

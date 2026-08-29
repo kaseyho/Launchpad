@@ -19,7 +19,9 @@ describe('SubscriptionDemo', () => {
 
     expect(screen.getByRole('dialog', { name: /set your research capacity/i })).toBeVisible();
     expect(screen.getByText(/usage meter and limits work now/i)).toBeVisible();
-    expect(screen.getByRole('radio', { name: /builder/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /explorer/i })).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(screen.getByRole('radio', { name: /builder/i }));
     expect(screen.getByText('$24', { selector: '.subscription-live-quote > strong' })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: /apply builder rules/i }));

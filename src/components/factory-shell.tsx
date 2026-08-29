@@ -75,9 +75,10 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
             className="subscription-trigger"
             aria-controls="subscription-demo"
             aria-expanded={subscriptionOpen}
+            aria-label={`Plans — ${subscription.subscription.planId}: ${subscription.remainingRuns} of ${subscription.subscription.monthlyRuns} research runs remaining`}
             onClick={() => setSubscriptionOpen(true)}
           >
-            Plans <span>{subscription.subscription.planId} · {subscription.remainingRuns}/{subscription.subscription.monthlyRuns}</span>
+            Plans <span aria-live="polite">{subscription.subscription.planId} · {subscription.remainingRuns}/{subscription.subscription.monthlyRuns}</span>
           </button>
           <button
             ref={activityButtonRef}

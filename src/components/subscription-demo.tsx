@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   DEFAULT_PLAN_QUOTES,
   PLAN_DEFINITIONS,
@@ -36,24 +36,29 @@ export function SubscriptionDemo({
   subscription: SubscriptionState;
   onApply: (quote: PlanQuote) => void;
 }) {
-  const [selectedPlanId, setSelectedPlanId] = useState<PlanId>(subscription.planId === 'explorer' ? 'builder' : subscription.planId);
-  const selectedInitial = subscription.planId === selectedPlanId ? subscription : DEFAULT_PLAN_QUOTES[selectedPlanId];
-  const [selectedRuns, setSelectedRuns] = useState(selectedInitial.monthlyRuns);
-  const [selectedSeats, setSelectedSeats] = useState(selectedInitial.seats);
+  const [selectedPlanId, setSelectedPlanId] = useState<PlanId>(subscription.planId);
+  const [selectedRuns, setSelectedRuns] = useState(subscription.monthlyRuns);
+  const [selectedSeats, setSelectedSeats] = useState(subscription.seats);
+  const [appliedQuote, setAppliedQuote] = useState<PlanQuote | null>(null);
+
+  const closeDrawer = useCallback(() => {
+    setAppliedQuote(null);
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') closeDrawer();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [onClose, open]);
+  }, [closeDrawer, open]);
 
   if (!open) return null;
 
@@ -78,8 +83,13 @@ export function SubscriptionDemo({
     setSelectedSeats(next.seats);
   };
 
+  const applySelectedPlan = () => {
+    onApply(selectedQuote);
+    setAppliedQuote(selectedQuote);
+  };
+
   return (
-    <div className="subscription-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
+    <div className="subscription-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) closeDrawer(); }}>
       <aside
         className="subscription-drawer"
         id="subscription-demo"
@@ -94,7 +104,7 @@ export function SubscriptionDemo({
             <h2 id="subscription-title">Set your research capacity</h2>
             <p id="subscription-description">Choose how many complete problem-to-solution runs LaunchPad should provide each month. The selected allowance is enforced across human and WebMCP runs.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close plans">Close</button>
+          <button type="button" onClick={closeDrawer} aria-label="Close plans">Close</button>
         </header>
 
         <div className="subscription-demo-notice" role="note">
@@ -121,6 +131,13 @@ export function SubscriptionDemo({
           </div>
           <div className="subscription-usage-track" aria-label={`${usagePercent}% of research allowance used`}><span style={{ width: `${usagePercent}%` }} /></div>
         </section>
+
+        {appliedQuote && isSelectedActive && (
+          <p className="subscription-application-status" role="status">
+            <strong>{selectedPlan.name} is now active.</strong>
+            {remaining} of {subscription.monthlyRuns} research runs remain for this period. This limit is shared by manual and WebMCP research.
+          </p>
+        )}
 
         <section className="subscription-section" aria-labelledby="plan-comparison-title">
           <div className="subscription-section-heading">
@@ -218,7 +235,7 @@ export function SubscriptionDemo({
                 <div><dt>Effective rate</dt><dd>{selectedQuote.monthlyPrice === 0 ? '$0' : `$${perRun.toFixed(2)}`} / included run</dd></div>
                 <div><dt>Overage</dt><dd>Blocked at limit · no surprise fee</dd></div>
               </dl>
-              <button type="button" onClick={() => onApply(selectedQuote)} disabled={isSelectedActive}>
+              <button type="button" onClick={applySelectedPlan} disabled={isSelectedActive}>
                 {isSelectedActive ? 'Current product configuration' : `Apply ${selectedPlan.name} rules to LaunchPad — ${priceLabel(selectedQuote.monthlyPrice)}/mo`}
               </button>
             </div>

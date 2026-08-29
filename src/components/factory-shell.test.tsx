@@ -68,6 +68,29 @@ describe('FactoryShell autonomous workflow', () => {
     expect(screen.getByRole('dialog', { name: /activity/i })).toBeVisible();
   });
 
+  it('applies a selected plan to the workspace and its shared research allowance', async () => {
+    const user = userEvent.setup();
+    render(<FactoryShell />);
+
+    await user.click(screen.getByRole('button', { name: /plans/i }));
+    expect(screen.getByRole('radio', { name: /explorer/i })).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(screen.getByRole('radio', { name: /builder/i }));
+    await user.click(screen.getByRole('button', { name: /apply builder rules/i }));
+
+    expect(await screen.findByText(/builder is now active/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^plans —/i })).toHaveTextContent(/builder · 40\/40/i);
+    expect(screen.getByText(/current plan/i).parentElement).toHaveTextContent(/builder/i);
+
+    await user.click(screen.getByRole('button', { name: /close plans/i }));
+    expect(screen.getByRole('region', { name: /problem brief/i })).toHaveTextContent(/builder \/ 40 of 40 runs left/i);
+
+    mockAcademicSearch();
+    await user.type(screen.getByRole('textbox', { name: /what problem should launchpad solve/i }), CUSTOM_PROBLEM);
+    await user.click(screen.getByRole('button', { name: /research this problem/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^plans —/i })).toHaveTextContent(/builder · 39\/40/i), { timeout: 5000 });
+  }, 8000);
+
   it('turns one submitted problem into a solution and cited research ledger', async () => {
     mockAcademicSearch();
     const user = userEvent.setup();
