@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-export const PUBLIC_SITE_URL = 'https://proof-foundry.hello18528.chatgpt.site';
+export const PUBLIC_SITE_URL = 'https://launchpad-nine-sand.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(PUBLIC_SITE_URL),
