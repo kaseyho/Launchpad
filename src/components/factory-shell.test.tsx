@@ -55,8 +55,8 @@ describe('FactoryShell autonomous workflow', () => {
     expect(await screen.findByRole('heading', { name: /one solution. every claim traceable/i }, { timeout: 5000 })).toBeVisible();
     expect(screen.getByRole('region', { name: /evidence-backed solution/i })).toBeVisible();
     expect(screen.getByRole('heading', { name: /guided practice loop/i })).toBeVisible();
-    expect(screen.getByRole('region', { name: /research findings/i })).toHaveTextContent(/7 cited findings/i);
-    expect(screen.getAllByRole('link', { name: /open research/i })).toHaveLength(7);
+    expect(screen.getByRole('region', { name: /research findings/i })).toHaveTextContent(/7 findings/i);
+    expect(screen.getAllByRole('link', { name: /open original research/i })).toHaveLength(7);
     expect(screen.queryByRole('button', { name: /plan research|add source|accept evidence/i })).not.toBeInTheDocument();
   }, 8000);
 });

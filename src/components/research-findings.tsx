@@ -1,36 +1,58 @@
-import type { FoundryWorkspace } from '../domain/types';
+import type { Finding, FoundryWorkspace } from '../domain/types';
 
-function findingLabel(type: FoundryWorkspace['findings'][number]['evidenceType']) {
-  if (type === 'counter_evidence') return 'LIMITATION / COUNTER-SIGNAL';
-  if (type === 'primary_research') return 'RESEARCH FINDING';
-  return type.replaceAll('_', ' ').toUpperCase();
+function findingLabel(finding: Finding) {
+  return finding.evidenceType === 'counter_evidence' ? 'Caution' : 'Support';
+}
+
+function takeaway(finding: Finding) {
+  const firstSentence = finding.normalizedClaim.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim();
+  const text = firstSentence || finding.normalizedClaim;
+  return text.length > 165 ? `${text.slice(0, 162).trim()}…` : text;
+}
+
+function FindingGroup({ title, findings, offset }: { title: string; findings: Finding[]; offset: number }) {
+  if (!findings.length) return null;
+  return (
+    <section className="research-group">
+      <header><h3>{title}</h3><span>{findings.length}</span></header>
+      <div className="research-rows">
+        {findings.map((finding, index) => (
+          <details key={finding.id} data-counter={finding.evidenceType === 'counter_evidence'}>
+            <summary>
+              <span className="research-index">{String(offset + index + 1).padStart(2, '0')}</span>
+              <div className="research-row-copy">
+                <div><span>{findingLabel(finding)}</span><small>{finding.citation.publishedDate}</small></div>
+                <strong>{takeaway(finding)}</strong>
+                <small>{finding.citation.sourceTitle}</small>
+              </div>
+              <i aria-hidden="true">+</i>
+            </summary>
+            <div className="research-detail">
+              <div><span>Abstract excerpt</span><blockquote>{finding.citation.exactExcerpt}</blockquote></div>
+              <div className="research-detail-meta"><span>{finding.citation.authorOrPublisher}</span><span>Qualified from abstract — verify the full paper for high-stakes use.</span></div>
+              <a href={finding.citation.urlOrDocumentId} target="_blank" rel="noreferrer">Open original research ↗</a>
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export function ResearchFindings({ workspace }: { workspace: FoundryWorkspace }) {
   const findings = workspace.findings.filter((finding) => finding.reviewStatus === 'qualified' || finding.reviewStatus === 'accepted');
+  const support = findings.filter((finding) => finding.evidenceType !== 'counter_evidence');
+  const cautions = findings.filter((finding) => finding.evidenceType === 'counter_evidence');
   return (
-    <section className="research-ledger" aria-label="Research findings">
+    <section className="research-ledger" id="research-ledger" aria-label="Research findings">
       <header className="research-ledger-header">
-        <div><span>Research ledger / {findings.length} cited findings</span><h2>The evidence behind the solution</h2></div>
-        <p>LaunchPad qualified these findings from citation-linked abstracts. Follow the original papers before making a high-stakes implementation decision.</p>
+        <div><span>Source library / {findings.length} findings</span><h2>Research, without the wall of text.</h2></div>
+        <p>Scan the takeaway first. Expand only when you need the abstract excerpt, publication details, or original paper.</p>
       </header>
-      <ol>
-        {findings.map((finding, index) => (
-          <li key={finding.id} data-counter={finding.evidenceType === 'counter_evidence'}>
-            <span className="research-index">{String(index + 1).padStart(2, '0')}</span>
-            <article>
-              <div className="research-finding-meta"><span>{findingLabel(finding.evidenceType)}</span><span>{finding.citation.publishedDate}</span></div>
-              <h3>{finding.citation.sourceTitle}</h3>
-              <p>{finding.normalizedClaim}</p>
-              <blockquote>{finding.citation.exactExcerpt}</blockquote>
-              <footer>
-                <span>{finding.citation.authorOrPublisher}</span>
-                <a href={finding.citation.urlOrDocumentId} target="_blank" rel="noreferrer">Open research ↗</a>
-              </footer>
-            </article>
-          </li>
-        ))}
-      </ol>
+      <div className="research-groups">
+        <FindingGroup title="Supporting research" findings={support} offset={0} />
+        <FindingGroup title="Limits and cautions" findings={cautions} offset={support.length} />
+      </div>
     </section>
   );
 }

@@ -5,7 +5,7 @@ import { metadata } from './site-metadata';
 
 describe('production metadata', () => {
   it('resolves canonical and social assets against the public site', () => {
-    expect(metadata.metadataBase?.toString()).toBe('https://proof-foundry.hello18528.chatgpt.site/');
+    expect(metadata.metadataBase?.toString()).toBe('https://launchpad-nine-sand.vercel.app/');
     expect(metadata.alternates?.canonical).toBe('/');
     expect(metadata.applicationName).toBe('LaunchPad');
     expect(metadata.title).toEqual(expect.objectContaining({ default: expect.stringContaining('LaunchPad') }));
@@ -22,7 +22,7 @@ describe('production metadata', () => {
     render(<SiteHead />);
     expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      'https://proof-foundry.hello18528.chatgpt.site/',
+      'https://launchpad-nine-sand.vercel.app/',
     );
   });
 });
