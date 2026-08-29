@@ -63,9 +63,7 @@ A user enters a real problem, such as:
 - a growth or analytics problem.
     
 
-The user’s agent then operates LaunchPad through WebMCP.
-
-The agent:
+After that single submission, LaunchPad autonomously:
 
 1. converts the problem into a structured research brief;
     
@@ -81,14 +79,16 @@ The agent:
     
 7. clusters findings into opportunity areas;
     
-8. generates several evidence-backed ideas;
+8. generates one evidence-backed solution;
     
 9. stress-tests the strongest candidate;
     
 10. assembles a final **Proof-Carrying Idea Blueprint**.
     
 
-The human sees the entire process advance through a compact interactive 3D factory.
+The human is not asked to provide an API key, find sources, approve intermediate stages, or operate a manual research workflow. They see the entire process advance through a compact interactive 3D factory and can inspect the final research ledger.
+
+WebMCP exposes the same complete run to a browser agent through one high-level tool and exposes the underlying stages through narrower inspection and operation tools. It is an optional control and verification layer, not a prerequisite for using the product.
 
 Research papers, reports, analytics, uploaded documents, community observations, and market evidence enter as “raw material.” Findings move through visual processing stations. Contradictions are flagged as defects. Insights are assembled into a final product blueprint.
 
@@ -116,7 +116,7 @@ This evidence lineage is the product’s primary innovation.
 
 # 3. Five-second pitch
 
-> **LaunchPad turns a messy problem into a defensible idea. ChatGPT operates a live research factory through WebMCP, combining public research and private business data until every part of the final idea is backed by evidence.**
+> **LaunchPad turns one messy problem into one evidence-backed solution. The product researches autonomously; WebMCP lets a browser agent start the same run and verify every step.**
 
 The visual hook:
 
@@ -230,7 +230,7 @@ Sources
 
 For the hackathon, build one exceptional workflow:
 
-> Enter a problem, let an agent construct the evidence factory, challenge one assumption, and receive a final idea with visible, clickable proof.
+> Enter a problem once, let LaunchPad construct the evidence factory, challenge its own recommendation, and receive a final solution with visible, clickable proof.
 
 The user should understand the product before the first tool call finishes.
 
@@ -673,25 +673,7 @@ We need an intervention that could be shipped within
 six weeks and should improve first-session activation.
 ```
 
-The user may optionally add:
-
-- target audience;
-    
-- geography;
-    
-- time horizon;
-    
-- existing evidence;
-    
-- budget;
-    
-- delivery constraints;
-    
-- desired outcome;
-    
-- excluded approaches;
-    
-- decision criteria.
+This is the only required user input. LaunchPad infers a provisional audience, desired outcome, and research focus from the statement. Those inferences remain visible as assumptions in the final output rather than becoming another form the user must complete.
     
 
 The factory displays:
@@ -705,7 +687,7 @@ STATUS: UNREFINED
 
 ## Stage 2: Brief Refinery
 
-The agent reads the current state through WebMCP and converts the problem into:
+LaunchPad converts the problem into:
 
 ```text
 Primary audience:
@@ -729,13 +711,13 @@ Open questions:
 • Are failures caused by complexity, trust, or missing information?
 ```
 
-The human edits or approves the brief.
+The pipeline continues automatically. The brief is recorded in the audit trail and can be inspected later; no intermediate approval is required.
 
 ---
 
 ## Stage 3: Research Planner
 
-The agent creates a plan across five lanes:
+LaunchPad creates a focused plan across academic-mechanism and counter-evidence lanes for the autonomous P0 run. The wider data model retains first-party, customer, market, alternatives, and community lanes for future connected sources.
 
 1. **First-party behavior**
     
@@ -761,7 +743,7 @@ Each research question has:
 - completion state.
     
 
-The user can lock or remove questions.
+Research questions are visible in the evidence graph but do not interrupt the run.
 
 ---
 
@@ -1227,20 +1209,18 @@ These thresholds should be configurable rather than presented as universal scien
 
 ## Core design rule
 
-Do not expose:
+Expose both levels of control:
 
-```text
-research_everything_and_generate_idea()
-```
+1. `research_and_ideate` mirrors the product’s actual one-input autonomous workflow and visibly changes the whole page.
+2. Narrow tools expose the underlying research state, evidence lineage, quality gates, stress test, and export so an agent can verify or intervene without relying on an opaque wrapper.
 
-That would look like a normal AI application with a WebMCP wrapper.
-
-Expose a composable investigation workflow.
+The high-level tool proves WebMCP can operate the product as intended. The narrow tools prove that the result remains composable and auditable.
 
 ## Proposed site tools
 
 |Tool|Type|Purpose|Visible page effect|
 |---|---|---|---|
+|`research_and_ideate`|Write|Runs the complete problem-to-solution workflow from the submitted statement|Factory advances through every station and the final solution appears|
 |`get_foundry_state`|Read|Returns active brief, stage, counts, warnings, and selected candidate|None|
 |`update_problem_brief`|Write|Adds or revises audience, outcome, constraints, or timeframe|Problem Hopper and brief panel update|
 |`plan_research`|Write|Creates structured research questions and proposed source lanes|Planner station activates|
@@ -1285,36 +1265,17 @@ Every tool must:
 - avoid returning secret tokens or raw credentials.
     
 
-## Example tool sequence
+## Recommended demo tool sequence
 
 ```text
+research_and_ideate
 get_foundry_state
-update_problem_brief
-plan_research
-
-search_sources        → academic lane
-search_sources        → market lane
-import_source         → first-party analytics
-extract_findings
-
-review_findings
-get_evidence_gaps
-
-search_sources        → counter-evidence
-extract_findings
-synthesize_insights
-
-generate_idea_candidates
 inspect_candidate
-stress_test_candidate
-revise_candidate
-
-finalize_blueprint
 trace_evidence
 export_blueprint
 ```
 
-That is a visibly non-trivial WebMCP implementation.
+The first call runs the real product. The read calls then verify the completed state and its source lineage. Judges can also invoke the narrow write tools individually to demonstrate composability.
 
 ## Registration requirement
 
@@ -2264,32 +2225,16 @@ Never silently transform inaccessible evidence into an unsupported verdict.
 
 ---
 
-# 35. Manual usability
+# 35. Direct usability
 
 The website must remain coherent without an agent.
 
-A human can manually:
-
-- enter a problem;
-    
-- create research questions;
-    
-- search and add sources;
-    
-- inspect findings;
-    
-- organize clusters;
-    
-- generate candidates;
-    
-- connect evidence;
-    
-- finalize a blueprint.
+A human can complete the product without an agent by entering one problem statement and starting the run. LaunchPad performs the research workflow, then presents the solution, citations, counter-evidence, assumptions, and validation plan.
     
 
 This satisfies the “complete product” requirement rather than producing a WebMCP-only technical demonstration.
 
-WebMCP should make the process dramatically faster and more natural, not be the only way the page functions.
+WebMCP should let a browser agent start, inspect, and verify the same workflow. It must never create a separate demo-only path or add an API-key requirement.
 
 ---
 
@@ -2548,30 +2493,23 @@ Distinctive concepts:
 
 The demo must include this sequence:
 
-1. Candidate A appears strongest.
+1. The user types one genuine problem and clicks **Research this problem**.
     
-2. User says:
+2. The voxel factory visibly advances through planning, search, extraction, synthesis, ideation, and stress testing.
     
-    > “Remove community anecdotes and use only first-party analytics, primary research, and recent market evidence.”
+3. One problem-specific solution appears, not a pre-generated demo.
     
-3. The agent invokes WebMCP tools.
+4. The page immediately shows why it may work, what can undermine it, what remains assumed, and what to test next.
     
-4. Community source crates move to the excluded lane.
+5. The user opens a research finding and follows its DOI link.
     
-5. Evidence links disappear from Candidate A.
+6. A browser agent calls `research_and_ideate` for a second problem through WebMCP.
     
-6. Candidate A’s support falls visibly.
+7. The activity trail proves that the agent changed the same page and produced a different evidence-backed result.
     
-7. Candidate B becomes the stronger recommendation.
+8. The user traces one solution feature through insight and finding to its original source.
     
-8. The blueprint reassembles.
-    
-9. User clicks a feature.
-    
-10. The entire evidence path lights up.
-    
-
-This proves that the output is not prewritten and the evidence is not decorative.
+This proves that the output is generated from the submitted problem, the research is not decorative, and WebMCP operates the real product rather than a separate chat experience.
 
 ---
 

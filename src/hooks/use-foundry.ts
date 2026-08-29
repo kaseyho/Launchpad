@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createFoundryService, createInitialWorkspace, type FoundryService } from '../domain/foundry-service';
-import type { FoundryWorkspace, ServiceFailure, ServiceSuccess, TraceNode } from '../domain/types';
+import type { Actor, FoundryWorkspace, ServiceFailure, ServiceSuccess, TraceNode } from '../domain/types';
 import { isAbortError, loadLocalWorkspace, saveWorkspaceSnapshot } from '../persistence/client-workspace';
+import { runAutonomousResearch, type AutonomousResearchProgress } from '../research/autonomous-research';
 
 type AnyResult = ServiceSuccess<unknown> | ServiceFailure;
 type ExportFile = { filename: string; mimeType: string; content: string };
@@ -38,6 +39,10 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
   const [storageStatus, setStorageStatus] = useState<'loading' | 'ready' | 'saving' | 'saved' | 'offline'>(process.env.NODE_ENV === 'test' ? 'ready' : 'loading');
   const [traceNodes, setTraceNodes] = useState<TraceNode[]>([]);
   const [lastExport, setLastExport] = useState<ExportFile>();
+  const [researchRun, setResearchRun] = useState<AutonomousResearchProgress>(() => initialWorkspace?.stage === 'FINALIZED'
+    ? { phase: 'complete', progress: 100, message: 'Your evidence-backed solution is ready.' }
+    : { phase: 'idle', progress: 0, message: 'Waiting for your problem statement.' });
+  const runAbortRef = useRef<AbortController | undefined>(undefined);
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') return;
@@ -92,77 +97,71 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
     };
   }, [persistenceReady, workspace]);
 
+  useEffect(() => {
+    if (!persistenceReady || researchRun.phase !== 'idle') return;
+    if (workspace.stage === 'FINALIZED') {
+      queueMicrotask(() => setResearchRun({ phase: 'complete', progress: 100, message: 'Your evidence-backed solution is ready.' }));
+    } else if (workspace.stage !== 'EMPTY') {
+      queueMicrotask(() => setResearchRun({
+        phase: 'error',
+        progress: 0,
+        message: 'The previous research run was interrupted.',
+        error: 'Retry the run to rebuild the solution from the saved problem statement.',
+      }));
+    }
+  }, [persistenceReady, researchRun.phase, workspace.stage]);
+
   const report = useCallback((result: AnyResult) => {
     setNotice(result.ok ? result.message : result.error.message);
     return result;
   }, []);
 
-  const runPrimaryAction = useCallback(() => {
-    const current = controller.getSnapshot();
-    if (current.stage === 'EMPTY') {
-      setNotice('Type your problem statement first. LaunchPad does not preload a demo case.');
-      return;
+  const startResearch = useCallback(async (problemStatement?: string, actor: Actor = 'human') => {
+    if (runAbortRef.current) return false;
+    const problem = problemStatement?.trim() || controller.getSnapshot().problemBrief.problemStatement.trim();
+    if (!problem) {
+      setResearchRun({ phase: 'error', progress: 0, message: 'A problem statement is required.', error: 'Enter the problem you want LaunchPad to research.' });
+      return false;
     }
-    if (current.stage === 'PROBLEM_DEFINED') {
-      report(service.planResearch({ focus: current.problemBrief.desiredOutcome || current.problemBrief.problemStatement }));
-      return;
-    }
-    if (current.stage === 'RESEARCH_PLANNED' || (current.stage === 'SOURCING' && current.sources.length === 0)) {
-      setNotice('Add a relevant source, or ask your WebMCP agent to research and import evidence for this problem.');
-      return;
-    }
-    if (current.stage === 'SOURCING') {
-      report(service.extractFindings({ sourceIds: current.sources.map((source) => source.id) }));
-      return;
-    }
-    if (current.stage === 'EVIDENCE_REVIEW') {
-      const pending = current.findings.filter((finding) => finding.reviewStatus === 'pending');
-      if (pending.length) {
-        report(service.reviewFindings({ decision: 'accept', findingIds: pending.map((finding) => finding.id), note: 'Accepted for the deterministic demo after citation inspection.' }));
+    const abortController = new AbortController();
+    runAbortRef.current = abortController;
+    setTraceNodes([]);
+    setLastExport(undefined);
+    setNotice('LaunchPad is researching your problem.');
+    try {
+      await runAutonomousResearch({
+        problem,
+        service,
+        getWorkspace: controller.getSnapshot,
+        signal: abortController.signal,
+        actor,
+        onProgress: (progress) => {
+          setResearchRun(progress);
+          setNotice(progress.message);
+        },
+        pause: () => new Promise((resolve) => window.setTimeout(resolve, 140)),
+      });
+      return true;
+    } catch (error) {
+      if (isAbortError(error)) {
+        setResearchRun({ phase: 'idle', progress: 0, message: 'Research stopped.' });
       } else {
-        report(service.synthesizeInsights({}));
+        const message = error instanceof Error ? error.message : 'The research run could not be completed.';
+        setResearchRun({ phase: 'error', progress: 0, message: 'Research needs another attempt.', error: message });
+        setNotice(message);
       }
-      return;
+      return false;
+    } finally {
+      runAbortRef.current = undefined;
     }
-    if (current.stage === 'INSIGHTS_READY') {
-      report(service.generateIdeaCandidates({ count: 3 }));
-      return;
-    }
-    if (current.stage === 'CANDIDATES_READY') {
-      const acceptedCommunity = current.findings.some((finding) => finding.evidenceType === 'community_anecdote' && finding.reviewStatus === 'accepted');
-      if (acceptedCommunity) {
-        report(service.reviewFindings({ decision: 'reject', evidenceType: 'community_anecdote', note: 'Excluded by human request: use only first-party, research, and standards evidence.' }));
-      } else if (current.selectedCandidateId) {
-        report(service.stressTestCandidate({ candidateId: current.selectedCandidateId }));
-      }
-      return;
-    }
-    if (current.stage === 'STRESS_TESTING' && current.selectedCandidateId) {
-      report(service.finalizeBlueprint({ candidateId: current.selectedCandidateId }));
-    }
-  }, [controller, report, service]);
+  }, [controller, service]);
 
-  const primaryActionLabel = (() => {
-    if (workspace.stage === 'EMPTY') return 'ENTER YOUR PROBLEM';
-    if (workspace.stage === 'PROBLEM_DEFINED') return 'PLAN RESEARCH';
-    if (workspace.stage === 'RESEARCH_PLANNED') return 'ADD FIRST SOURCE';
-    if (workspace.stage === 'SOURCING') return workspace.sources.length ? 'EXTRACT FINDINGS' : 'ADD FIRST SOURCE';
-    if (workspace.stage === 'EVIDENCE_REVIEW') return workspace.findings.some((finding) => finding.reviewStatus === 'pending') ? 'ACCEPT ALL EVIDENCE' : 'SYNTHESIZE INSIGHTS';
-    if (workspace.stage === 'INSIGHTS_READY') return 'FORGE CANDIDATES';
-    if (workspace.stage === 'CANDIDATES_READY') {
-      return workspace.findings.some((finding) => finding.evidenceType === 'community_anecdote' && finding.reviewStatus === 'accepted')
-        ? 'EXCLUDE COMMUNITY ANECDOTES'
-        : `STRESS-TEST ${workspace.candidates.find((candidate) => candidate.id === workspace.selectedCandidateId)?.name === 'First-Value Flightpath' ? 'FLIGHTPATH' : 'SELECTED IDEA'}`;
-    }
-    if (workspace.stage === 'STRESS_TESTING') return 'FINALIZE BLUEPRINT';
-    return 'BLUEPRINT FINALIZED';
-  })();
-
-  const defineProblem = useCallback((problemStatement: string) => {
-    const result = service.updateProblemBrief({ problemStatement }, 'human');
-    report(result);
-    return result.ok;
-  }, [report, service]);
+  const retryResearch = useCallback(() => {
+    const problem = controller.getSnapshot().problemBrief.problemStatement;
+    if (!problem) return;
+    report(service.resetWorkspace('system'));
+    void startResearch(problem, 'human');
+  }, [controller, report, service, startResearch]);
 
   const traceEvidence = useCallback((candidateId: string, componentPath: string) => {
     const result = service.traceEvidence({ candidateId, componentPath }, 'human');
@@ -184,8 +183,11 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
   }, [report, service]);
 
   const resetWorkspace = useCallback(() => {
+    runAbortRef.current?.abort();
+    runAbortRef.current = undefined;
     setTraceNodes([]);
     setLastExport(undefined);
+    setResearchRun({ phase: 'idle', progress: 0, message: 'Waiting for your problem statement.' });
     report(service.resetWorkspace());
   }, [report, service]);
 
@@ -215,10 +217,10 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
     service,
     notice,
     storageStatus,
+    researchRun,
     traceNodes,
-    primaryActionLabel,
-    runPrimaryAction,
-    defineProblem,
+    startResearch,
+    retryResearch,
     report,
     traceEvidence,
     exportBlueprint,

@@ -1,120 +1,112 @@
 # LaunchPad
 
-**Evidence in. Defensible ideas out.**
+**Type one problem. Get one evidence-backed solution.**
 
 [Open the live public app](https://launchpad-nine-sand.vercel.app)
 
-LaunchPad is a visual research factory where a human starts with their own problem and a browser agent helps turn relevant evidence into one defensible, testable idea. It is built for the [WebMCP Challenge](https://webmcp.devpost.com/) and exposes the complete research-to-blueprint workflow as 16 narrow WebMCP tools—not as a one-shot generation wrapper.
+LaunchPad is an autonomous research-to-solution web app built for the [WebMCP Challenge](https://webmcp.devpost.com/). The person does one thing: describes the problem. LaunchPad then searches relevant academic research, extracts citation-linked findings, preserves limitations and counter-evidence, develops one recommended intervention, stress-tests it, and presents the solution with the complete research ledger behind it.
 
-The application is fully usable without an agent. Every manual control and every WebMCP tool invokes the same typed domain service, updates the same live workspace, and writes to the same audit trail. The activity drawer stays closed until someone wants to inspect it.
+No API key, source upload, prompt copying, or manual research workflow is required.
+
+## Product flow
+
+1. Enter a real problem statement.
+2. LaunchPad frames and runs three focused research searches.
+3. It reads citation-ready abstracts, qualifies the useful findings, and keeps contrary findings visible.
+4. It turns the strongest mechanisms into one problem-specific solution.
+5. It stress-tests that recommendation and returns:
+   - why the solution can work;
+   - the research supporting each core decision;
+   - limitations and counter-signals;
+   - assumptions that remain unproven; and
+   - a concrete validation plan.
+
+The interactive voxel factory makes the run legible while it happens. The activity log is optional and stays closed until the user wants an audit trail.
 
 ## Why WebMCP matters
 
-LaunchPad does not place a chat box beside the product. It exposes the product itself as 16 typed browser tools:
+WebMCP is LaunchPad’s optional browser-agent control and verification layer, not another step for the user.
 
-1. An agent reads the same workspace the human sees.
-2. It calls one narrow LaunchPad tool, such as `extract_findings` or `stress_test_candidate`.
-3. The shared page changes immediately, including the interactive factory stage, workbench, scores, and proof lineage.
+- `research_and_ideate` starts the same complete problem-to-solution run exposed by the page.
+- Sixteen narrower tools let an agent inspect or operate the underlying brief, sources, findings, evidence gaps, candidates, lineage, stress test, and export.
+- Human actions and WebMCP actions use the same domain service, update the same visible page, and write to the same activity trail.
+- Read-only tools expose the final state and proof paths without mutating the result.
 
-The first screen makes that loop visible with a large problem-statement input and a live WebMCP rail. Once the problem is saved, the page creates a problem-specific ChatGPT instruction. Open **Activity** only when you want proof of who acted, which tool ran, and what changed.
+WebMCP does not require an API key pasted into the site. In a supported browser, the page registers its tools with `document.modelContext`; the browser agent can invoke them in the existing page session.
 
-WebMCP does **not** require the user to paste an API key into LaunchPad. A supported browser exposes the page’s registered tools to the agent already running in that browser session. The Source Dock accepts public URLs, pasted excerpts, PDF/TXT/CSV/JSON uploads, and live Crossref academic-metadata results.
+## Two-minute demo
 
-## The two-minute demo
-
-1. Type a real problem statement into the empty factory and save it.
-2. Copy the problem-specific instruction from the WebMCP rail and give it to the browser agent.
-3. Watch the agent call `get_foundry_state`, read the exact human-authored brief, plan research, and import relevant evidence into the same page.
-4. Inspect one evidence record to verify its exact passage, context, caveats, and provenance before accepting or rejecting it.
-5. Let the agent submit structured, problem-specific candidates through `generate_idea_candidates`; LaunchPad links their components to accepted findings and scores their evidence coverage.
-6. Stress-test the strongest candidate, finalize its validation plan, and trace one feature back to its source.
-7. Open **Activity** briefly to verify the real agent tool calls, then export a public-safe Markdown or JSON blueprint.
-
-In a WebMCP-enabled browser, an agent can perform the same sequence through the registered tools while the human watches and intervenes in the same page.
+1. Type a problem and click **Research this problem**.
+2. Watch the factory move through planning, search, extraction, synthesis, ideation, and stress testing.
+3. Reveal the finished solution, its proof cards, limitations, assumptions, and next test.
+4. Open the research ledger and follow any finding to its DOI source.
+5. Expand **WebMCP details** to show the one-shot agent tool and the sixteen inspection/operation tools.
+6. Optionally ask a browser agent to call `research_and_ideate`, then inspect the activity log to prove the page changed through WebMCP.
 
 ## WebMCP tool surface
 
-| Tool | Mode | Visible effect |
-|---|---|---|
-| `get_foundry_state` | Read | Returns the human-authored brief, stage, counts, warnings, and selected candidate |
-| `update_problem_brief` | Write | Updates the shared launch brief |
-| `plan_research` | Write | Activates six structured source lanes |
-| `search_sources` | Write | Uses connected source adapters; leaves an open import task when no adapter result exists |
-| `import_source` | Write | Adds a URL, excerpt, upload, or connected-data result |
-| `extract_findings` | Write | Moves citation-complete findings into inspection |
-| `review_findings` | Write | Accepts, rejects, or qualifies evidence and recalculates support |
-| `get_evidence_gaps` | Read | Returns quality-gate gaps and warnings |
-| `synthesize_insights` | Write | Assembles opportunity themes and contradictions |
-| `generate_idea_candidates` | Write | Validates and renders one to three agent-proposed, evidence-linked candidates |
-| `inspect_candidate` | Read | Returns structure, coverage, links, and unsupported components |
-| `stress_test_candidate` | Write | Records counter-evidence and adoption/feasibility risks |
-| `revise_candidate` | Write | Revises a candidate without breaking lineage |
-| `trace_evidence` | Read | Highlights the complete component-to-source proof path |
-| `finalize_blueprint` | Write | Locks a versioned, evidence-gated blueprint |
-| `export_blueprint` | Write | Prepares a Markdown or JSON export |
+| Tool | Purpose |
+|---|---|
+| `research_and_ideate` | Runs the full visible research-to-solution workflow in one call |
+| `get_foundry_state` | Reads the active brief, stage, counts, warnings, and selected solution |
+| `update_problem_brief` | Updates the structured problem brief |
+| `plan_research` | Creates structured research questions |
+| `search_sources` | Searches a configured source lane |
+| `import_source` | Adds a citation, excerpt, or connected-data result |
+| `extract_findings` | Creates citation-complete atomic findings |
+| `review_findings` | Accepts, rejects, or qualifies findings |
+| `get_evidence_gaps` | Returns quality-gate gaps and warnings |
+| `synthesize_insights` | Clusters findings and contradictions |
+| `generate_idea_candidates` | Creates evidence-linked solution proposals |
+| `inspect_candidate` | Reads solution structure and evidence coverage |
+| `stress_test_candidate` | Applies counter-evidence and records risks |
+| `revise_candidate` | Revises a candidate while preserving lineage |
+| `trace_evidence` | Reads a complete solution-component-to-source path |
+| `finalize_blueprint` | Locks the evidence-gated solution blueprint |
+| `export_blueprint` | Produces Markdown or JSON output |
 
-All schemas reject undeclared fields. Read tools carry the `readOnlyHint` annotation. Write tools describe their side effects, validate the current state, return modified IDs, and produce actionable failure codes.
+All tool schemas reject undeclared fields. Read tools carry the `readOnlyHint` annotation. Write tools validate the current state, report side effects, and return actionable failures.
+
+## Research and evidence model
+
+- Academic discovery uses the public Crossref Works API; the user supplies no credential.
+- LaunchPad only selects records with an available abstract for the autonomous run.
+- Every visible finding contains its exact abstract excerpt, title, author, date, and DOI link.
+- Abstract-derived findings are explicitly qualified, not presented as verified full-paper conclusions.
+- At least one counter-evidence finding is required before finalization.
+- The final output says why an idea is worth testing; it never claims an unbuilt intervention is proven to work.
+- High-stakes decisions should verify the full papers and involve an appropriate expert.
 
 ## Local development
 
-Requirements: Node.js 22.13 or newer.
+Requires Node.js 22.13 or newer.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. The manual experience works in any current browser. Agent operation requires a browser build with WebMCP enabled.
+Open `http://localhost:3000`.
 
-Validation commands:
+Validation:
 
 ```bash
 npm test
+npx next typegen
 npx tsc --noEmit
 npm run lint
 npm run build
-npm run db:generate
 ```
 
 ## Architecture
 
-- Vinext/React renders one persistent, responsive factory workspace around the supplied voxel factory GLB.
-- A framework-independent TypeScript service owns state transitions, evidence gates, lineage, scoring, stress tests, and exports.
-- Manual UI handlers and top-level `document.modelContext.registerTool` handlers call that same service instance; the WebMCP rail and optional activity drawer expose the result.
-- Every host keeps a validated workspace snapshot in the user’s browser; the Cloudflare/Sites target also mirrors versioned snapshots to D1 using an anonymous, HTTP-only browser identity.
-- The Cloudflare/Sites target stores PDF, TXT, CSV, and JSON evidence uploads in R2. The public fallback host can still import TXT, CSV, and JSON directly in-browser; PDFs require a pasted excerpt when object storage is unavailable.
-- A server-side Crossref adapter returns citation-ready DOI metadata without treating metadata or abstracts as accepted evidence.
-- A deterministic judging pack remains available for the documented administrator-setup scenario, while custom problems never receive those unrelated fixtures.
+- Vinext/React renders a responsive single-page factory around the supplied `factory.glb` model.
+- A framework-independent TypeScript service owns state transitions, evidence gates, lineage, stress tests, and exports.
+- The autonomous research runner orchestrates that same service rather than maintaining a hidden second workflow.
+- The Crossref adapter runs server-side and returns citation-ready metadata and abstracts.
+- Browser snapshots preserve a completed workspace locally; Cloudflare/Sites deployments can also persist workspaces through the configured D1 adapter.
 
-See [docs/architecture.md](docs/architecture.md) for the detailed state, persistence, and safety model.
-
-## Evidence and privacy rules
-
-- Synthetic data is always labelled.
-- Findings remain pending until a human or an explicitly directed agent accepts, rejects, or qualifies them.
-- Every public claim in the demo carries an exact excerpt, source location, access mode, and retrieval timestamp.
-- Inaccessible content remains metadata-only; LaunchPad never fabricates a passage.
-- Public exports omit private sources and their findings by default.
-- Uploaded files accept only PDF, TXT, CSV, or JSON up to 10 MB and remain in private object storage.
-- Tokens and credentials are never placed in tool results or workspace state.
-
-## Public source provenance
-
-| Source | Role in the demo |
-|---|---|
-| [Sweller, *Cognitive load during problem solving: Effects on learning*](https://doi.org/10.1016/0364-0213(88)90023-7) | Mechanism evidence about means-ends problem solving and cognitive load |
-| [Schwonke et al., *Effects of different ratios of worked solution steps and problem solving opportunities*](https://doi.org/10.1016/j.chb.2010.03.037) | Mechanism evidence for worked examples |
-| [GOV.UK Service Manual, *Learning about users and their needs*](https://www.gov.uk/service-manual/user-research/start-by-learning-user-needs) | Assumption discipline |
-| [W3C WAI, *Provide Help and Support*](https://www.w3.org/WAI/WCAG2/supplemental/objectives/o7-support/) | Accessibility guidance for contextual support |
-| [Nielsen Norman Group, *Flash Usability Report*](https://media.nngroup.com/media/reports/free/Website_Tools_and_Applications_with_Flash.pdf) | Counter-evidence about forced tutorial control |
-
-The GA4 funnel, support-ticket sample, and two community observations are synthetic fixtures created only for the hackathon demonstration.
-
-## Current scope
-
-This P0 is deliberately one excellent problem-to-blueprint journey. It does not include team accounts, enterprise OAuth connectors, semantic search over arbitrary uploads, or autonomous evidence acceptance. PDF uploads are stored and represented as metadata-only until a parser or user-supplied excerpt is available.
-
-The repository also retains a [legacy 1:49 demo recording](artifacts/demo/ProofFoundry-demo.mp4) of the earlier interface for project history; it does not represent the current LaunchPad design.
+See [docs/architecture.md](docs/architecture.md) for the detailed state and persistence model.
 
 ## License
 

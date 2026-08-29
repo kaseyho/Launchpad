@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   try {
     const url = new URL('https://api.crossref.org/works');
     url.searchParams.set('query.bibliographic', query);
-    url.searchParams.set('rows', '5');
+    url.searchParams.set('filter', 'has-abstract:true');
+    url.searchParams.set('rows', '8');
     url.searchParams.set('select', 'DOI,title,author,published,container-title,publisher,abstract');
     const upstream = await fetch(url, { headers: { accept: 'application/json' } });
     if (!upstream.ok) throw new Error(`Crossref returned ${upstream.status}.`);

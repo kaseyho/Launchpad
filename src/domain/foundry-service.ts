@@ -95,6 +95,9 @@ export interface FoundryService {
     lane?: SourceLane;
     private?: boolean;
     synthetic?: boolean;
+    author?: string;
+    publisher?: string;
+    publishedAt?: string;
   }, actor?: Actor): ServiceResult<Source>;
   extractFindings(input: { sourceIds?: string[] }, actor?: Actor): ServiceResult<Finding[]>;
   reviewFindings(input: {
@@ -209,7 +212,10 @@ function hashText(value: string) {
 function sourceDomain(source: Source) {
   if (!source.url.startsWith('http')) return source.sourceFamilyId;
   try {
-    return new URL(source.url).hostname.replace(/^www\./, '');
+    const hostname = new URL(source.url).hostname.replace(/^www\./, '');
+    return hostname === 'doi.org' && source.publisher !== 'User-provided source'
+      ? source.publisher.toLowerCase()
+      : hostname;
   } catch {
     return source.sourceFamilyId;
   }
@@ -265,14 +271,17 @@ function evidenceGapSnapshot(workspace: FoundryWorkspace) {
   const reviewed = workspace.findings.filter(accepted);
   const domains = new Set(reviewed.map((finding) => sourceForFinding(workspace, finding)).filter(Boolean).map((source) => sourceDomain(source!)));
   const categories = evidenceCategories(workspace);
+  const curatedDemo = isCuratedDemoProblem(workspace);
+  const requiredFindings = curatedDemo ? 6 : 4;
+  const requiredDomains = curatedDemo ? 3 : 2;
   const gaps: string[] = [];
   const warnings: string[] = [];
 
-  if (reviewed.length < 6) gaps.push(`${6 - reviewed.length} more accepted findings needed for the default gate.`);
-  if (domains.size < 3) gaps.push(`${3 - domains.size} more independent source domains needed.`);
+  if (reviewed.length < requiredFindings) gaps.push(`${requiredFindings - reviewed.length} more accepted findings needed for the default gate.`);
+  if (domains.size < requiredDomains) gaps.push(`${requiredDomains - domains.size} more independent source domains needed.`);
   if (categories.size < 2) gaps.push(`${2 - categories.size} more evidence categories needed.`);
-  if (!reviewed.some((finding) => typeof finding.value === 'number')) gaps.push('At least one quantitative finding is required.');
-  if (!reviewed.some((finding) => typeof finding.value !== 'number')) gaps.push('At least one qualitative finding is required.');
+  if (curatedDemo && !reviewed.some((finding) => typeof finding.value === 'number')) gaps.push('At least one quantitative finding is required.');
+  if (curatedDemo && !reviewed.some((finding) => typeof finding.value !== 'number')) gaps.push('At least one qualitative finding is required.');
   if (!reviewed.some((finding) => finding.evidenceType === 'counter_evidence')) gaps.push('A counter-evidence finding is required before finalization.');
   if (reviewed.some((finding) => finding.evidenceType === 'community_anecdote')) warnings.push('Community anecdotes are accepted but remain weak, non-prevalence evidence.');
   if (reviewed.some((finding) => finding.synthetic)) warnings.push('Synthetic first-party evidence is clearly labeled and must be replaced for a real decision.');
@@ -702,9 +711,9 @@ export function createFoundryService(
           lane: input.lane ?? 'customer',
           sourceType: input.sourceType,
           title: input.title.trim(),
-          author: 'User provided',
-          publisher: 'User-provided source',
-          publishedAt: now().slice(0, 10),
+          author: input.author?.trim() || 'User provided',
+          publisher: input.publisher?.trim() || 'User-provided source',
+          publishedAt: input.publishedAt?.trim() || now().slice(0, 10),
           url: input.url?.trim() || `document://${id}.txt`,
           accessMode: input.private ? 'private' : 'user_provided',
           userProvided: true,

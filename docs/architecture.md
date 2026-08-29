@@ -47,7 +47,7 @@ The first viewport keeps three responsibilities distinct: the launch brief defin
 
 ## WebMCP boundary
 
-The 16 tools register from the top-level client page through `document.modelContext.registerTool`. Each tool:
+The 17 tools register from the top-level client page through `document.modelContext.registerTool`. `research_and_ideate` mirrors the product’s complete autonomous run; the other 16 expose its underlying state and operations. Each tool:
 
 - has a narrow JSON schema with `additionalProperties: false`;
 - operates only on the active anonymous workspace;

@@ -1,52 +1,54 @@
 import { useState } from 'react';
 import type { FoundryWorkspace } from '../domain/types';
-import { FACTORY_STATIONS, getActiveStationKey } from '../presentation/factory-stages';
+import type { AutonomousResearchProgress, AutonomousResearchPhase } from '../research/autonomous-research';
 
 interface LaunchBriefProps {
   workspace: FoundryWorkspace;
-  primaryActionLabel: string;
-  onPrimaryAction: () => void;
-  onDefineProblem: (problemStatement: string) => boolean;
-  onInspectEvidence: () => void;
-  onAddSource: () => void;
-  onEditProblem: () => void;
+  researchRun: AutonomousResearchProgress;
+  onStartResearch: (problemStatement: string) => Promise<boolean>;
+  onRetry: () => void;
   onReset: () => void;
 }
 
-export function LaunchBrief({
-  workspace,
-  primaryActionLabel,
-  onPrimaryAction,
-  onDefineProblem,
-  onInspectEvidence,
-  onAddSource,
-  onEditProblem,
-  onReset,
-}: LaunchBriefProps) {
-  const brief = workspace.problemBrief;
+const RUN_STEPS: Array<{ phase: AutonomousResearchPhase; label: string }> = [
+  { phase: 'planning', label: 'Frame the research' },
+  { phase: 'searching', label: 'Find relevant studies' },
+  { phase: 'extracting', label: 'Extract cited findings' },
+  { phase: 'synthesizing', label: 'Find the mechanisms' },
+  { phase: 'ideating', label: 'Build one solution' },
+  { phase: 'stress_testing', label: 'Challenge the recommendation' },
+];
+
+function phaseIndex(phase: AutonomousResearchPhase) {
+  if (phase === 'complete') return RUN_STEPS.length;
+  return RUN_STEPS.findIndex((step) => step.phase === phase);
+}
+
+export function LaunchBrief({ workspace, researchRun, onStartResearch, onRetry, onReset }: LaunchBriefProps) {
   const [problemStatement, setProblemStatement] = useState('');
   const [problemError, setProblemError] = useState('');
-  const activeStation = FACTORY_STATIONS.find((station) => station.key === getActiveStationKey(workspace.stage)) ?? FACTORY_STATIONS[0];
-  const accepted = workspace.findings.filter((finding) => finding.reviewStatus === 'accepted' || finding.reviewStatus === 'qualified').length;
+  const running = !['idle', 'complete', 'error'].includes(researchRun.phase);
+  const currentStep = phaseIndex(researchRun.phase);
 
-  if (workspace.stage === 'EMPTY') {
+  if (workspace.stage === 'EMPTY' && researchRun.phase === 'idle') {
     return (
       <section className="launch-brief launch-brief-empty" aria-label="Problem brief">
-        <span className="section-kicker">Problem hopper / your input</span>
-        <h1>Put your problem on the line.</h1>
-        <p className="launch-deck">Describe the real problem in your own words. LaunchPad turns it into shared, tool-ready state for you and your browser agent.</p>
+        <span className="section-kicker">One input / complete research run</span>
+        <h1>State the problem. Get the case for what to build.</h1>
+        <p className="launch-deck">LaunchPad searches relevant research, extracts the useful findings, challenges the obvious answer, and returns one solution with visible proof.</p>
 
         <form className="problem-entry" onSubmit={(event) => {
           event.preventDefault();
           const value = problemStatement.trim();
           if (value.length < 20) {
-            setProblemError('Give the factory a little more context—at least 20 characters.');
+            setProblemError('Give LaunchPad enough context to research—at least 20 characters.');
             return;
           }
           setProblemError('');
-          if (onDefineProblem(value)) setProblemStatement('');
+          setProblemStatement('');
+          void onStartResearch(value);
         }}>
-          <label htmlFor="launchpad-problem">Your problem statement</label>
+          <label htmlFor="launchpad-problem">What problem should LaunchPad solve?</label>
           <textarea
             id="launchpad-problem"
             value={problemStatement}
@@ -62,56 +64,53 @@ export function LaunchBrief({
           />
           <div className="problem-entry-footer">
             <span>{problemStatement.length} / 1200</span>
-            <button type="submit">Start with my problem <span aria-hidden="true">→</span></button>
+            <button type="submit">Research this problem <span aria-hidden="true">→</span></button>
           </div>
           {problemError && <p className="problem-entry-error" role="alert">{problemError}</p>}
         </form>
 
-        <p className="problem-entry-trust"><strong>No API key required.</strong> WebMCP uses the agent already connected to your supported browser; LaunchPad never asks you to paste a secret.</p>
+        <p className="problem-entry-trust"><strong>You stop typing here.</strong> No API key, source hunting, or manual research workflow is required.</p>
       </section>
     );
   }
 
   return (
-    <section className="launch-brief" aria-label="Problem brief">
-      <span className="section-kicker">Your problem · {activeStation.shortName}</span>
-      <h1>Build the case before the build.</h1>
-      <p className="launch-deck">Your browser agent can now operate LaunchPad’s typed tools against this exact problem. Every source, finding, and idea stays visible here.</p>
-
-      <div className="brief-card">
-        <span>Problem on the line</span>
-        <strong>{brief.problemStatement}</strong>
-        {(brief.targetAudience || brief.desiredOutcome) && (
-          <p>{[brief.targetAudience, brief.desiredOutcome].filter(Boolean).join(' · ')}</p>
-        )}
-        <div className="brief-card-actions">
-          <button type="button" className="brief-edit" onClick={onEditProblem}>Add audience, outcome + constraints</button>
-          <button type="button" className="brief-reset" onClick={() => {
-            if (window.confirm('Start a new problem? The current workspace will be cleared.')) onReset();
-          }}>Start new problem</button>
-        </div>
+    <section className="launch-brief launch-brief-run" aria-label="Research run" aria-live="polite">
+      <span className="section-kicker">Autonomous research run</span>
+      <h1>{researchRun.phase === 'complete' ? 'One solution. Every claim traceable.' : researchRun.phase === 'error' ? 'The research run paused.' : 'The factory is building your answer.'}</h1>
+      <div className="run-problem">
+        <span>Problem submitted</span>
+        <strong>{workspace.problemBrief.problemStatement}</strong>
       </div>
 
-      <div className="launch-metrics" aria-label="Workspace evidence counts">
-        <div><strong data-testid="source-count">{String(workspace.sources.length).padStart(3, '0')}</strong><span>sources</span></div>
-        <div><strong>{String(workspace.findings.length).padStart(3, '0')}</strong><span>findings</span></div>
-        <div><strong data-testid="accepted-count">{String(accepted).padStart(3, '0')}</strong><span>accepted</span></div>
+      <div className="run-progress" data-status={researchRun.phase}>
+        <div className="run-progress-header">
+          <span>{researchRun.phase === 'complete' ? 'Complete' : researchRun.phase === 'error' ? 'Needs retry' : `Working / ${researchRun.progress}%`}</span>
+          <strong>{researchRun.message}</strong>
+        </div>
+        <div className="run-progress-track" aria-label={`${researchRun.progress}% complete`}><span style={{ width: `${researchRun.progress}%` }} /></div>
+        <ol className="run-steps">
+          {RUN_STEPS.map((step, index) => {
+            const state = researchRun.phase === 'error' && index === currentStep
+              ? 'error'
+              : index < currentStep || researchRun.phase === 'complete'
+                ? 'complete'
+                : index === currentStep
+                  ? 'active'
+                  : 'queued';
+            return <li key={step.phase} data-state={state}><span>{String(index + 1).padStart(2, '0')}</span><strong>{step.label}</strong><i aria-hidden="true" /></li>;
+          })}
+        </ol>
+        {researchRun.error && <p className="run-error" role="alert">{researchRun.error}</p>}
       </div>
 
-      <button className="launch-primary-action" type="button" onClick={onPrimaryAction} disabled={workspace.stage === 'FINALIZED'}>
-        <span>{primaryActionLabel.toLowerCase()}</span>
-        <span aria-hidden="true">→</span>
-      </button>
-
-      <details className="launch-more-actions">
-        <summary>Manual controls</summary>
-        <div className="launch-secondary-actions" aria-label="Manual workspace controls">
-          <button type="button" onClick={onEditProblem}>Edit brief</button>
-          <button type="button" onClick={onAddSource}>Add source</button>
-          <button type="button" onClick={onInspectEvidence} disabled={workspace.findings.length === 0}>Inspect evidence</button>
-          <button type="button" onClick={onReset}>Reset workspace</button>
-        </div>
-      </details>
+      <div className="run-actions">
+        {researchRun.phase === 'error' && <button type="button" className="run-retry" onClick={onRetry}>Retry research →</button>}
+        {researchRun.phase === 'complete' && <a className="run-result-link" href="#launch-result">See the solution and research ↓</a>}
+        {!running && <button type="button" className="run-reset" onClick={() => {
+          if (window.confirm('Research a new problem? The current result will be cleared.')) onReset();
+        }}>Research another problem</button>}
+      </div>
     </section>
   );
 }

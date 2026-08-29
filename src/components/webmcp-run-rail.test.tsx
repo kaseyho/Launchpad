@@ -4,46 +4,37 @@ import { describe, expect, it } from 'vitest';
 import { createInitialWorkspace } from '../domain/foundry-service';
 import { createAgentPrompt, WebMCPRunRail } from './webmcp-run-rail';
 
+const idleRun = { phase: 'idle' as const, progress: 0, message: 'Waiting for your problem statement.' };
+
 describe('WebMCPRunRail', () => {
-  it('explains that WebMCP uses browser tools without an API key', async () => {
+  it('keeps WebMCP optional and explains the one-shot agent control layer', async () => {
     const user = userEvent.setup();
-    render(<WebMCPRunRail workspace={createInitialWorkspace()} ready={false} toolCount={16} />);
+    render(<WebMCPRunRail workspace={createInitialWorkspace()} ready={false} toolCount={17} researchRun={idleRun} />);
 
-    expect(screen.getByText(/WebMCP \/ no API key/i)).toBeVisible();
-    expect(screen.getByText(/open in a webmcp browser/i)).toBeVisible();
-    expect(screen.getByText(/16 typed tools/i)).toBeVisible();
-    expect(screen.getByText(/This page changes/i)).toBeVisible();
-    expect(screen.getByRole('button', { name: /copy chatgpt instruction/i })).toBeDisabled();
+    expect(screen.getByText(/webmcp \/ optional agent control/i)).toBeVisible();
+    expect(screen.getByText(/solution \+ proof/i)).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: /how it works/i }));
-    expect(screen.getByText(/the page exposes tools/i)).toBeVisible();
-    expect(screen.getByText(/your agent operates them/i)).toBeVisible();
-    expect(screen.getByText(/no api key to paste/i)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: /webmcp details/i }));
+    expect(screen.getByText(/the user types once/i)).toBeVisible();
+    expect(screen.getByText(/research_and_ideate/i)).toBeVisible();
+    expect(screen.getByText(/17 tools preserve proof/i)).toBeVisible();
+    expect(screen.getByText(/not another task the person must complete/i)).toBeVisible();
   });
 
-  it('creates a problem-specific agent instruction and shows real agent activity', async () => {
-    const user = userEvent.setup();
+  it('creates one high-level agent instruction and shows real agent activity', () => {
     const workspace = createInitialWorkspace();
     workspace.stage = 'PROBLEM_DEFINED';
     workspace.problemBrief.problemStatement = 'Libraries struggle to match older visitors with accessible digital-skills support.';
     workspace.activity.push({
-      id: 'agent-event',
-      actor: 'agent',
-      toolName: 'plan_research',
-      inputSummary: 'Build a plan for the defined problem.',
-      outputSummary: 'Created six research lanes.',
-      createdAt: '2026-08-29T00:00:00.000Z',
-      workspaceVersion: 2,
-      status: 'success',
+      id: 'agent-event', actor: 'agent', toolName: 'research_and_ideate', inputSummary: 'Run complete research.',
+      outputSummary: 'Built the evidence-backed solution.', createdAt: '2026-08-29T00:00:00.000Z', workspaceVersion: 2, status: 'success',
     });
 
-    render(<WebMCPRunRail workspace={workspace} ready toolCount={16} />);
+    render(<WebMCPRunRail workspace={workspace} ready toolCount={17} researchRun={{ phase: 'complete', progress: 100, message: 'Ready.' }} />);
 
-    expect(screen.getByText('Agent connected')).toBeVisible();
-    expect(screen.getByText('plan_research')).toBeVisible();
-    expect(screen.getByText('Created six research lanes.')).toBeVisible();
+    expect(screen.getByText('Agent tools connected')).toBeVisible();
+    expect(screen.getByText('research_and_ideate')).toBeVisible();
     expect(createAgentPrompt(workspace)).toContain(workspace.problemBrief.problemStatement);
-    await user.click(screen.getByRole('button', { name: /copy chatgpt instruction/i }));
-    expect(screen.getByRole('status')).toHaveTextContent(/prompt copied/i);
+    expect(createAgentPrompt(workspace)).toContain('research_and_ideate');
   });
 });

@@ -15,6 +15,7 @@ export function useWebMCP(
   service: FoundryService,
   onTrace: (nodes: TraceNode[]) => void,
   onExport: (file: ExportFile) => void,
+  onResearch: (problemStatement?: string, actor?: 'agent') => Promise<boolean>,
 ) {
   const [ready, setReady] = useState(false);
 
@@ -23,13 +24,17 @@ export function useWebMCP(
     if (!modelContext) return;
 
     let active = true;
-    const unregister = registerFoundryTools(modelContext, service, { onTrace, onExport });
+    const unregister = registerFoundryTools(modelContext, service, {
+      onTrace,
+      onExport,
+      onResearch: (problemStatement) => onResearch(problemStatement, 'agent'),
+    });
     queueMicrotask(() => { if (active) setReady(true); });
     return () => {
       active = false;
       unregister();
     };
-  }, [onExport, onTrace, service]);
+  }, [onExport, onResearch, onTrace, service]);
 
   return { ready, toolCount: WEBMCP_TOOL_COUNT };
 }

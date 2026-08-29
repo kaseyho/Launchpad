@@ -1,7 +1,7 @@
 import type { FoundryService } from '../domain/foundry-service';
 import type { EvidenceType, IdeaCandidateProposal, ProblemBrief, ServiceResult, Source, SourceLane, TraceNode } from '../domain/types';
 
-export const WEBMCP_TOOL_COUNT = 16;
+export const WEBMCP_TOOL_COUNT = 17;
 
 type JSONSchema = {
   type: 'object';
@@ -31,6 +31,7 @@ export interface ModelContextLike {
 interface RegisterOptions {
   onTrace?: (nodes: TraceNode[]) => void;
   onExport?: (file: { filename: string; mimeType: string; content: string }) => void;
+  onResearch?: (problemStatement?: string) => Promise<boolean>;
 }
 
 const emptySchema = (): JSONSchema => ({ type: 'object', properties: {}, additionalProperties: false });
@@ -87,6 +88,25 @@ export function getFoundryToolDefinitions(
       execute: () => toolResult(service.getFoundryState('agent')),
     },
     {
+      name: 'research_and_ideate',
+      description: 'Run the complete LaunchPad workflow in one action: structure the problem, search relevant research, extract and qualify cited findings, synthesize mechanisms, build one solution, stress-test it, and finalize the visible blueprint. This is the one-shot WebMCP entry point and visibly changes the entire page.',
+      inputSchema: objectSchema({
+        problem_statement: stringProperty('Problem to research. Omit when the user has already submitted it in the page.'),
+      }),
+      execute: async (input) => {
+        if (!options.onResearch) {
+          return { isError: true, content: [{ type: 'text', text: JSON.stringify({ ok: false, code: 'AUTONOMOUS_RUN_UNAVAILABLE', message: 'The autonomous research runner is not connected.' }) }] };
+        }
+        const completed = await options.onResearch(input.problem_statement as string | undefined);
+        return {
+          ...(completed ? {} : { isError: true }),
+          content: [{ type: 'text', text: JSON.stringify(completed
+            ? { ok: true, message: 'The evidence-backed solution is ready and visible in LaunchPad.' }
+            : { ok: false, code: 'AUTONOMOUS_RUN_FAILED', message: 'The research run did not complete. Inspect the visible retry state.' }, null, 2) }],
+        };
+      },
+    },
+    {
       name: 'update_problem_brief',
       description: 'Create or revise the active structured problem brief. This visibly updates the Problem Hopper and moves the workspace to PROBLEM_DEFINED.',
       inputSchema: objectSchema({
@@ -140,6 +160,9 @@ export function getFoundryToolDefinitions(
         lane: stringProperty('Evidence lane for the source.', lanes),
         private: { type: 'boolean', description: 'Whether the source contains private evidence.' },
         synthetic: { type: 'boolean', description: 'Whether this is disclosed synthetic demo evidence.' },
+        author: stringProperty('Author list when known.'),
+        publisher: stringProperty('Publisher or venue owner when known.'),
+        published_at: stringProperty('Publication date in YYYY-MM-DD form when known.'),
       }, ['title', 'source_type']),
       execute: (input) => toolResult(service.importSource({
         title: input.title as string,
@@ -149,6 +172,9 @@ export function getFoundryToolDefinitions(
         lane: input.lane as SourceLane | undefined,
         private: input.private as boolean | undefined,
         synthetic: input.synthetic as boolean | undefined,
+        author: input.author as string | undefined,
+        publisher: input.publisher as string | undefined,
+        publishedAt: input.published_at as string | undefined,
       }, 'agent')),
     },
     {

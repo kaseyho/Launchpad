@@ -2,7 +2,7 @@ import { createInMemoryFoundry } from '../domain/foundry-service';
 import { registerFoundryTools, type ModelContextLike, type WebMCPToolDefinition } from './register-tools';
 
 describe('LaunchPad WebMCP registration', () => {
-  it('registers the complete composable 16-tool control plane with narrow schemas', () => {
+  it('registers the one-shot run plus the complete composable control plane with narrow schemas', () => {
     const definitions: WebMCPToolDefinition[] = [];
     const context: ModelContextLike = {
       registerTool(definition) { definitions.push(definition); },
@@ -12,9 +12,10 @@ describe('LaunchPad WebMCP registration', () => {
 
     registerFoundryTools(context, service);
 
-    expect(definitions).toHaveLength(16);
+    expect(definitions).toHaveLength(17);
     expect(definitions.map((tool) => tool.name)).toEqual([
       'get_foundry_state',
+      'research_and_ideate',
       'update_problem_brief',
       'plan_research',
       'search_sources',
@@ -38,6 +39,21 @@ describe('LaunchPad WebMCP registration', () => {
       'trace_evidence',
     ]);
     expect(definitions.every((tool) => tool.inputSchema.additionalProperties === false)).toBe(true);
+  });
+
+  it('exposes a one-shot autonomous research entry point to browser agents', async () => {
+    const definitions: WebMCPToolDefinition[] = [];
+    const context: ModelContextLike = { registerTool(definition) { definitions.push(definition); } };
+    const { service } = createInMemoryFoundry();
+    let submittedProblem = '';
+    registerFoundryTools(context, service, { onResearch: async (problem) => { submittedProblem = problem ?? ''; return true; } });
+
+    const run = definitions.find((tool) => tool.name === 'research_and_ideate');
+    const result = await run?.execute({ problem_statement: 'Food-bank volunteers struggle to coordinate urgent deliveries.' });
+
+    expect(submittedProblem).toContain('Food-bank volunteers');
+    expect(result?.isError).not.toBe(true);
+    expect(result?.content[0]?.text).toContain('solution is ready');
   });
 
   it('uses the same service as the human UI so agent calls change visible workspace state', async () => {
