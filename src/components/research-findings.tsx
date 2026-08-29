@@ -49,8 +49,8 @@ export function ResearchFindings({ workspace }: { workspace: FoundryWorkspace })
   return (
     <section className="research-ledger" id="research-ledger" aria-label="Research findings">
       <header className="research-ledger-header">
-        <div><span>Source library / {findings.length} findings</span><h2>Research, without the wall of text.</h2></div>
-        <p>Scan the takeaway first. Expand only when you need the abstract excerpt, publication details, or original paper.</p>
+        <div><span>05 / SOURCE RECORDS</span><h3>Research appendix</h3></div>
+        <p>{findings.length} reviewed findings. Expand a row only when you need the original excerpt.</p>
       </header>
       <div className="research-groups">
         <FindingGroup title="Supporting research" findings={support} offset={0} />

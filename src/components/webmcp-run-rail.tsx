@@ -55,10 +55,10 @@ export function WebMCPRunRail({
 
       {expanded && (
         <div className="webmcp-explanation">
-          <div><span>01</span><strong>The user types once</strong><p>The webpage starts the complete research-to-solution run itself.</p></div>
-          <div><span>02</span><strong>WebMCP exposes the run</strong><p>A browser agent can start the same one-shot workflow with <code>research_and_ideate</code>.</p></div>
-          <div><span>03</span><strong>{toolCount} tools preserve proof</strong><p>The agent can inspect sources, findings, decisions, and lineage without a pasted API key.</p></div>
-          <p className="webmcp-distinction"><strong>WebMCP is the control and verification layer.</strong> It is not another task the person must complete.</p>
+          <div><span>01</span><strong>One human input</strong><p>The problem statement starts the run.</p></div>
+          <div><span>02</span><strong>One agent action</strong><p><code>research_and_ideate</code> runs the factory.</p></div>
+          <div><span>03</span><strong>{toolCount} inspectable tools</strong><p>Sources and decisions remain traceable.</p></div>
+          <p className="webmcp-distinction"><strong>WebMCP controls and verifies the run.</strong> It adds no user setup.</p>
         </div>
       )}
     </aside>

@@ -25,7 +25,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
       <section className="launch-brief launch-brief-empty" aria-label="Problem brief">
         <span className="section-kicker">One input / complete research run</span>
         <h1>State the problem. Get the case for what to build.</h1>
-        <p className="launch-deck">LaunchPad searches relevant research, extracts the useful findings, challenges the obvious answer, and returns one solution with visible proof.</p>
+        <p className="launch-deck">One problem in. One research-backed solution out—with every claim traceable.</p>
 
         <form className="problem-entry" onSubmit={(event) => {
           event.preventDefault();
@@ -59,7 +59,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
           {problemError && <p className="problem-entry-error" role="alert">{problemError}</p>}
         </form>
 
-        <p className="problem-entry-trust"><strong>You stop typing here.</strong> No API key, source hunting, or manual research workflow is required.</p>
+        <p className="problem-entry-trust"><strong>That is your only step.</strong> No API key or source hunting.</p>
       </section>
     );
   }
@@ -67,7 +67,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
   return (
     <section className="launch-brief launch-brief-run" aria-label="Research run" aria-live="polite">
       <span className="section-kicker">Autonomous research run</span>
-      <h1>{researchRun.phase === 'complete' ? 'One solution. Every claim traceable.' : researchRun.phase === 'error' ? 'The research run paused.' : 'The factory is building your answer.'}</h1>
+      <h1>{researchRun.phase === 'complete' ? 'Your decision passport is ready.' : researchRun.phase === 'error' ? 'The research run paused.' : 'The factory is building your answer.'}</h1>
       <div className="run-problem">
         <span>Problem submitted</span>
         <strong>{workspace.problemBrief.problemStatement}</strong>
@@ -79,7 +79,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
           <strong>{researchRun.message}</strong>
         </div>
         <div className="run-progress-track" aria-label={`${researchRun.progress}% complete`}><span style={{ width: `${researchRun.progress}%` }} /></div>
-        <p className="run-progress-handoff">Follow the live production line beside this brief.</p>
+        <p className="run-progress-handoff">Watch the factory turn this problem into proof.</p>
         {researchRun.error && <p className="run-error" role="alert">{researchRun.error}</p>}
       </div>
 
@@ -89,7 +89,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
           <button type="button" className="run-retry" onClick={onOpenPlans}>Change research allowance →</button>
         )}
         {researchRun.phase === 'error' && researchRun.errorCode !== 'usage_limit' && <button type="button" className="run-retry" onClick={onRetry}>Retry research →</button>}
-        {researchRun.phase === 'complete' && <a className="run-result-link" href="#launch-result">See the solution and research ↓</a>}
+        {researchRun.phase === 'complete' && <a className="run-result-link" href="#launch-result">Read the decision passport ↓</a>}
         {!running && <button type="button" className="run-reset" onClick={() => {
           if (window.confirm('Research a new problem? The current result will be cleared.')) onReset();
         }}>Research another problem</button>}

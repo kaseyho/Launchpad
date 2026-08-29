@@ -121,8 +121,13 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
             <span>Output / evidence-backed solution</span>
             <button type="button" onClick={() => setInspectorOpen(true)}>Inspect evidence graph ↗</button>
           </div>
-          <BlueprintView workspace={workspace} traceNodes={foundry.traceNodes} onTrace={foundry.traceEvidence} onExport={foundry.exportBlueprint} />
-          <ResearchFindings workspace={workspace} />
+          <BlueprintView
+            workspace={workspace}
+            traceNodes={foundry.traceNodes}
+            onTrace={foundry.traceEvidence}
+            onExport={foundry.exportBlueprint}
+            researchAppendix={<ResearchFindings workspace={workspace} />}
+          />
         </section>
       )}
 

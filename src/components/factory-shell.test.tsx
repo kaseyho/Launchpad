@@ -50,8 +50,8 @@ describe('FactoryShell autonomous workflow', () => {
 
     expect(screen.getByRole('heading', { name: /state the problem/i })).toBeVisible();
     expect(screen.getByRole('textbox', { name: /what problem should launchpad solve/i })).toBeVisible();
-    expect(screen.getByText(/you stop typing here/i)).toBeVisible();
-    expect(screen.getByText(/no api key, source hunting, or manual research workflow/i)).toBeVisible();
+    expect(screen.getByText(/that is your only step/i)).toBeVisible();
+    expect(screen.getByText(/no api key or source hunting/i)).toBeVisible();
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/input open/i);
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/output empty/i);
     expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/optional agent control/i);
@@ -75,12 +75,16 @@ describe('FactoryShell autonomous workflow', () => {
     await user.click(screen.getByRole('button', { name: /research this problem/i }));
 
     expect(await screen.findByText(CUSTOM_PROBLEM)).toBeVisible();
-    expect(await screen.findByRole('heading', { name: /one solution. every claim traceable/i }, { timeout: 5000 })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: /your decision passport is ready/i }, { timeout: 5000 })).toBeVisible();
     expect(screen.getByRole('region', { name: /evidence-backed solution/i })).toBeVisible();
     expect(screen.getByRole('heading', { name: /guided practice loop/i })).toBeVisible();
+    expect(screen.getByText(/15-second read/i)).toBeVisible();
+    expect(screen.getByRole('link', { name: /open full report/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /the complete case/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /research appendix/i })).toBeVisible();
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/problem processed/i);
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/guided practice loop/i);
-    expect(screen.getByRole('region', { name: /research findings/i })).toHaveTextContent(/7 findings/i);
+    expect(screen.getByRole('region', { name: /research findings/i })).toHaveTextContent(/7 reviewed findings/i);
     expect(screen.getAllByRole('link', { name: /open original research/i })).toHaveLength(7);
     expect(screen.queryByRole('button', { name: /plan research|add source|accept evidence/i })).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: /plans/i })).toHaveTextContent(/explorer · 2\/3/i));

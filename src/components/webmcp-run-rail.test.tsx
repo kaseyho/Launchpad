@@ -15,10 +15,10 @@ describe('WebMCPRunRail', () => {
     expect(screen.getByText(/solution \+ proof/i)).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: /webmcp details/i }));
-    expect(screen.getByText(/the user types once/i)).toBeVisible();
+    expect(screen.getByText(/one human input/i)).toBeVisible();
     expect(screen.getByText(/research_and_ideate/i)).toBeVisible();
-    expect(screen.getByText(/17 tools preserve proof/i)).toBeVisible();
-    expect(screen.getByText(/not another task the person must complete/i)).toBeVisible();
+    expect(screen.getByText(/17 inspectable tools/i)).toBeVisible();
+    expect(screen.getByText(/adds no user setup/i)).toBeVisible();
   });
 
   it('creates one high-level agent instruction and shows real agent activity', () => {
