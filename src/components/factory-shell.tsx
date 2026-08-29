@@ -1,43 +1,114 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityDrawer } from './activity-drawer';
 import { BlueprintView } from './blueprint';
 import { CandidateForge } from './candidate-forge';
 import { EvidenceInspector } from './evidence-inspector';
-import { FactoryFloor } from './factory-floor';
-import { FactoryHud } from './factory-hud';
 import { ProblemDialog, SourceDialog } from './foundry-dialogs';
-import { ProblemPanel } from './problem-panel';
-import { ProductionLog } from './production-log';
+import { InteractiveFactory } from './interactive-factory';
+import { LaunchBrief } from './launch-brief';
+import { WebMCPRunRail } from './webmcp-run-rail';
 import { useFoundry } from '../hooks/use-foundry';
 import { useWebMCP } from '../hooks/use-webmcp';
 import type { FoundryWorkspace } from '../domain/types';
+import { getStageProgress } from '../presentation/factory-stages';
+
+function stageTitle(stage: FoundryWorkspace['stage']) {
+  const labels: Record<FoundryWorkspace['stage'], string> = {
+    EMPTY: 'Ready for a problem',
+    PROBLEM_DEFINED: 'Problem defined',
+    RESEARCH_PLANNED: 'Research planned',
+    SOURCING: 'Gathering sources',
+    EVIDENCE_REVIEW: 'Reviewing evidence',
+    INSIGHTS_READY: 'Signals synthesized',
+    CANDIDATES_READY: 'Ideas ready to compare',
+    STRESS_TESTING: 'Testing the strongest idea',
+    BLUEPRINT_READY: 'Blueprint ready',
+    FINALIZED: 'Blueprint finalized',
+  };
+  return labels[stage];
+}
+
+function StageSummary({ workspace }: { workspace: FoundryWorkspace }) {
+  const pending = workspace.findings.filter((finding) => finding.reviewStatus === 'pending').length;
+  const counterEvidence = workspace.findings.filter((finding) => finding.evidenceType === 'counter_evidence').length;
+  return (
+    <section className="stage-summary" aria-label="Current research stage">
+      <div>
+        <span className="section-kicker">Current artifact</span>
+        <h2>{stageTitle(workspace.stage)}</h2>
+        <p>The miniature factory above shows where this workspace is now. Detailed evidence and decisions appear here as the launch advances.</p>
+      </div>
+      <dl>
+        <div><dt>Research questions</dt><dd>{workspace.researchQuestions.length}</dd></div>
+        <div><dt>Pending review</dt><dd>{pending}</dd></div>
+        <div><dt>Insight clusters</dt><dd>{workspace.insights.length}</dd></div>
+        <div><dt>Counter-signals</dt><dd>{counterEvidence}</dd></div>
+      </dl>
+    </section>
+  );
+}
 
 export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryWorkspace }) {
   const foundry = useFoundry(initialWorkspace);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
   const [problemDialogOpen, setProblemDialogOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const activityButtonRef = useRef<HTMLButtonElement>(null);
   const { workspace } = foundry;
-  const webmcpReady = useWebMCP(foundry.service, foundry.acceptAgentTrace, foundry.acceptAgentExport);
+  const webmcp = useWebMCP(foundry.service, foundry.acceptAgentTrace, foundry.acceptAgentExport);
+  const progress = getStageProgress(workspace.stage);
 
-  const center = workspace.stage === 'FINALIZED' && workspace.blueprint ? (
+  const closeActivity = useCallback(() => {
+    setActivityOpen(false);
+    window.setTimeout(() => activityButtonRef.current?.focus(), 0);
+  }, []);
+
+  const workbench = workspace.stage === 'FINALIZED' && workspace.blueprint ? (
     <BlueprintView workspace={workspace} traceNodes={foundry.traceNodes} onTrace={foundry.traceEvidence} onExport={foundry.exportBlueprint} />
   ) : workspace.candidates.length > 0 ? (
     <CandidateForge workspace={workspace} />
   ) : (
-    <FactoryFloor workspace={workspace} />
+    <StageSummary workspace={workspace} />
   );
 
   return (
-    <main className="foundry-app">
-      <header className="topbar">
-        <a className="wordmark" href="#main-workspace" aria-label="ProofFoundry home">PROOF<span>{'//'}</span>FOUNDRY</a>
-        <div className="project-readout" aria-label="Active project"><span>PROJECT 001 · D1 {foundry.storageStatus.toUpperCase()}</span><strong>{workspace.title.toUpperCase()}</strong></div>
-        <div className="agent-status" data-connected={webmcpReady}><span className="status-light" aria-hidden="true" /><span>{webmcpReady ? 'WEBMCP CONNECTED' : 'MANUAL MODE READY'}</span></div>
+    <main className="launchpad-app" data-stage={workspace.stage}>
+      <header className="launch-header">
+        <a className="launch-wordmark" href="#launch-workspace" aria-label="LaunchPad home">
+          <span className="launch-mark" aria-hidden="true"><i /><i /><i /></span>
+          <strong>LaunchPad</strong>
+        </a>
+        <div className="launch-project" aria-label="Active project">
+          <span>{stageTitle(workspace.stage)}</span>
+          <strong>{workspace.title}</strong>
+        </div>
+        <div className="launch-header-actions">
+          <div className="launch-connection" data-connected={webmcp.ready}>
+            <span aria-hidden="true" />
+            {webmcp.ready ? 'WebMCP connected' : 'Manual ready'}
+          </div>
+          <button
+            ref={activityButtonRef}
+            type="button"
+            className="activity-trigger"
+            aria-controls="activity-drawer"
+            aria-expanded={activityOpen}
+            onClick={() => setActivityOpen(true)}
+          >
+            Activity <span>{workspace.activity.length}</span>
+          </button>
+        </div>
       </header>
-      <div className="workspace" id="main-workspace">
-        <ProblemPanel
+
+      <div className="launch-progress" aria-label={`${progress}% of launch workflow complete`}>
+        <span style={{ width: `${progress}%` }} />
+      </div>
+
+      <section className="launch-workspace" id="launch-workspace">
+        <LaunchBrief
           workspace={workspace}
           primaryActionLabel={foundry.primaryActionLabel}
           onPrimaryAction={foundry.runPrimaryAction}
@@ -46,16 +117,26 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
           onEditProblem={() => setProblemDialogOpen(true)}
           onReset={foundry.resetWorkspace}
         />
-        <div className="center-surface">{center}</div>
-        <FactoryHud workspace={workspace} webmcpReady={webmcpReady} />
-      </div>
-      <ProductionLog
+        <InteractiveFactory workspace={workspace} />
+        <WebMCPRunRail workspace={workspace} ready={webmcp.ready} toolCount={webmcp.toolCount} />
+      </section>
+
+      <section className="launch-workbench" aria-label="Launch workbench">
+        <div className="launch-workbench-header">
+          <div><span>Workspace artifact</span><strong>{stageTitle(workspace.stage)}</strong></div>
+          <p>{workspace.version > 0 ? `Version ${workspace.version} · persisted ${foundry.storageStatus}` : 'A traceable result will assemble here.'}</p>
+        </div>
+        {workbench}
+      </section>
+
+      <ActivityDrawer
         workspace={workspace}
+        open={activityOpen}
+        onClose={closeActivity}
         notice={foundry.notice}
         exportFilename={foundry.lastExport?.filename}
         onDownloadExport={foundry.downloadLastExport}
       />
-
       <EvidenceInspector
         workspace={workspace}
         open={inspectorOpen}

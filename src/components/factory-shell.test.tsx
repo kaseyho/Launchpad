@@ -3,6 +3,23 @@ import userEvent from '@testing-library/user-event';
 import { FactoryShell } from './factory-shell';
 
 describe('FactoryShell manual workflow', () => {
+  it('starts with one focused LaunchPad workspace and a hidden activity log', async () => {
+    const user = userEvent.setup();
+    render(<FactoryShell />);
+
+    expect(screen.getByRole('banner')).toHaveTextContent('LaunchPad');
+    expect(screen.getByRole('heading', { name: /turn scattered evidence into an idea you can defend/i })).toBeVisible();
+    expect(screen.getByRole('region', { name: /interactive research factory/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /webmcp runs launchpad from the page/i })).toBeVisible();
+    expect(screen.queryByRole('dialog', { name: /activity/i })).not.toBeInTheDocument();
+
+    const activityButton = screen.getByRole('button', { name: /activity/i });
+    expect(activityButton).toHaveAttribute('aria-expanded', 'false');
+    await user.click(activityButton);
+    expect(screen.getByRole('dialog', { name: /activity/i })).toBeVisible();
+    expect(activityButton).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('lets a human define a fresh problem instead of requiring the seeded demo', async () => {
     const user = userEvent.setup();
     render(<FactoryShell />);
@@ -23,7 +40,7 @@ describe('FactoryShell manual workflow', () => {
     const user = userEvent.setup();
     render(<FactoryShell />);
 
-    expect(screen.getByText('THE LINE IS EMPTY.')).toBeVisible();
+    expect(screen.getByRole('heading', { name: /turn scattered evidence into an idea you can defend/i })).toBeVisible();
     await user.click(screen.getByRole('button', { name: /load demo problem/i }));
     expect(screen.getByText('New administrators at mid-market B2B SaaS customers')).toBeVisible();
 

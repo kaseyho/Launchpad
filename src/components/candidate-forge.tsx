@@ -4,7 +4,7 @@ export function CandidateForge({ workspace }: { workspace: FoundryWorkspace }) {
   const selected = workspace.selectedCandidateId;
   return (
     <section className="candidate-forge" aria-label="Idea candidates">
-      <div className="section-readout"><span>STATION 05 / IDEA FORGE</span><strong>THREE INTERVENTIONS ASSEMBLED FROM ACCEPTED SIGNALS</strong></div>
+      <div className="section-readout"><span>Idea comparison</span><strong>Three interventions built from accepted evidence</strong></div>
       <div className="candidate-grid">
         {workspace.candidates.map((candidate, index) => (
           <article className="candidate-card" data-selected={candidate.id === selected} data-testid={`candidate-${candidate.id}`} key={candidate.id}>
@@ -21,7 +21,7 @@ export function CandidateForge({ workspace }: { workspace: FoundryWorkspace }) {
         ))}
       </div>
       {workspace.findings.some((finding) => finding.evidenceType === 'community_anecdote' && finding.reviewStatus === 'accepted') && (
-        <div className="weak-evidence-alert"><span>WEAK SIGNAL DEPENDENCY</span><strong>Candidate A currently relies on two synthetic community anecdotes. Remove them to test recommendation stability.</strong></div>
+        <div className="weak-evidence-alert"><span>Weak evidence dependency</span><strong>Candidate A currently relies on two synthetic community anecdotes. Remove them to test whether the recommendation changes.</strong></div>
       )}
     </section>
   );
