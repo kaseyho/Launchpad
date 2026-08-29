@@ -2,6 +2,8 @@
 
 **Raw signals in. Proof-carrying ideas out.**
 
+[Open the live public app](https://proof-foundry.hello18528.chatgpt.site) · [Watch the 1:49 narrated demo](artifacts/demo/ProofFoundry-demo.mp4)
+
 ProofFoundry is a visual research factory where a human and a browser agent turn fragmented evidence into one defensible, testable idea. It is built for the [WebMCP Challenge](https://webmcp.devpost.com/) and exposes the complete research-to-blueprint workflow as 16 narrow WebMCP tools—not as a one-shot generation wrapper.
 
 The application is fully usable without an agent. Every manual control and every WebMCP tool invokes the same typed domain service, updates the same live workspace, and writes to the same visible audit log.
