@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { FACTORY_MODEL_URL, fitFactoryModel, prepareFactoryModel } from './factory-model';
+import { FACTORY_MODEL_URL, fitFactoryModel, getFactoryCameraFrame, prepareFactoryModel } from './factory-model';
 
 describe('factory model presentation', () => {
   it('uses the supplied public GLB path', () => {
@@ -34,5 +34,15 @@ describe('factory model presentation', () => {
     expect(model.name).toBe('factory-model');
     expect(mesh.castShadow).toBe(true);
     expect(mesh.receiveShadow).toBe(true);
+  });
+
+  it('frames the whole model with extra breathing room', () => {
+    const model = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 2), new THREE.MeshBasicMaterial());
+    model.position.y = 3;
+
+    const frame = getFactoryCameraFrame(model, 32, 16 / 9, 1.2);
+
+    expect(frame.center.y).toBeCloseTo(3);
+    expect(frame.distance).toBeGreaterThan(13);
   });
 });

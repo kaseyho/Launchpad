@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Pixelify_Sans } from 'next/font/google';
 import { SiteHead } from './site-head';
 import { metadata } from './site-metadata';
 import './globals.css';
@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const pixelDisplay = Pixelify_Sans({
+  variable: '--font-pixel',
+  subsets: ['latin'],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,7 +29,7 @@ export default function RootLayout({
     <html lang="en">
       <head><SiteHead /></head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${pixelDisplay.variable} antialiased`}
       >
         {children}
       </body>

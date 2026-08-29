@@ -8,6 +8,11 @@ export interface FittedFactoryModel {
   scale: number;
 }
 
+export interface FactoryCameraFrame {
+  center: THREE.Vector3;
+  distance: number;
+}
+
 export function fitFactoryModel(model: THREE.Object3D, targetSize = 4.5): FittedFactoryModel {
   model.updateMatrixWorld(true);
   const initialBounds = new THREE.Box3().setFromObject(model);
@@ -50,3 +55,22 @@ export function prepareFactoryModel(model: THREE.Object3D) {
   return model;
 }
 
+export function getFactoryCameraFrame(
+  model: THREE.Object3D,
+  verticalFovDegrees: number,
+  aspect: number,
+  padding = 1.2,
+): FactoryCameraFrame {
+  model.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+  const verticalFov = THREE.MathUtils.degToRad(verticalFovDegrees);
+  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(aspect, 0.1));
+  const limitingFov = Math.max(Math.min(verticalFov, horizontalFov), THREE.MathUtils.degToRad(5));
+  const radius = Number.isFinite(sphere.radius) ? sphere.radius : 0;
+
+  return {
+    center: sphere.center,
+    distance: radius > 0 ? (radius / Math.sin(limitingFov / 2)) * padding : 8,
+  };
+}

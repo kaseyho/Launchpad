@@ -10,7 +10,7 @@ import {
   getActiveStationKey,
   getStationMetric,
 } from '../presentation/factory-stages';
-import { FACTORY_MODEL_URL, fitFactoryModel, prepareFactoryModel } from '../presentation/factory-model';
+import { FACTORY_MODEL_URL, fitFactoryModel, getFactoryCameraFrame, prepareFactoryModel } from '../presentation/factory-model';
 
 export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -45,9 +45,9 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x12101d, 0.025);
-    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-    camera.position.set(5.7, 4.5, 7.6);
+    scene.fog = new THREE.FogExp2(0x12131f, 0.018);
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+    camera.position.set(6.6, 4.9, 8.8);
 
     const controls = new OrbitControls(camera, canvas);
     controls.enableDamping = true;
@@ -61,15 +61,15 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
     controls.autoRotate = !reducedMotion;
     controls.autoRotateSpeed = 0.28;
 
-    scene.add(new THREE.HemisphereLight(0xe3ddff, 0x17131e, 2.25));
-    const keyLight = new THREE.DirectionalLight(0xfffbf5, 4.2);
+    scene.add(new THREE.HemisphereLight(0xfff0c2, 0x131522, 2.25));
+    const keyLight = new THREE.DirectionalLight(0xfff6d7, 4.2);
     keyLight.position.set(4, 8, 6);
     keyLight.castShadow = true;
     scene.add(keyLight);
-    const rimLight = new THREE.PointLight(0x9587ff, 24, 16);
+    const rimLight = new THREE.PointLight(0x63d1d2, 21, 16);
     rimLight.position.set(-3.5, 3.4, -2.5);
     scene.add(rimLight);
-    const warmLight = new THREE.PointLight(0xff8174, 12, 13);
+    const warmLight = new THREE.PointLight(0xee6b63, 13, 13);
     warmLight.position.set(4, 2.8, -2.8);
     scene.add(warmLight);
 
@@ -84,12 +84,28 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
 
     const shadow = new THREE.Mesh(
       new THREE.CircleGeometry(2.25, 64),
-      new THREE.MeshBasicMaterial({ color: 0x050408, transparent: true, opacity: 0.42, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ color: 0x070812, transparent: true, opacity: 0.5, depthWrite: false }),
     );
     shadow.rotation.x = -Math.PI / 2;
     shadow.scale.x = 1.38;
     shadow.position.y = 0.025;
     factory.add(shadow);
+
+    let loadedModel: THREE.Object3D | undefined;
+    const cameraDirection = new THREE.Vector3();
+    const frameLoadedModel = () => {
+      if (!loadedModel) return;
+      const frameSettings = getFactoryCameraFrame(loadedModel, camera.fov, camera.aspect, 1.22);
+      cameraDirection.copy(camera.position).sub(controls.target);
+      if (cameraDirection.lengthSq() < 0.001) cameraDirection.set(0.55, 0.36, 0.76);
+      cameraDirection.normalize();
+      controls.target.copy(frameSettings.center);
+      camera.position.copy(frameSettings.center).addScaledVector(cameraDirection, frameSettings.distance);
+      camera.near = Math.max(0.05, frameSettings.distance / 100);
+      camera.far = Math.max(100, frameSettings.distance * 10);
+      camera.updateProjectionMatrix();
+      controls.update();
+    };
 
     queueMicrotask(() => { if (!cancelled) setModelStatus('loading'); });
     const loader = new GLTFLoader();
@@ -106,10 +122,10 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
           return;
         }
         const model = prepareFactoryModel(gltf.scene);
-        const fitted = fitFactoryModel(model, 4.65);
+        fitFactoryModel(model, 4.25);
         modelAnchor.add(model);
-        controls.target.set(0, Math.max(0.7, fitted.height * 0.46), 0);
-        controls.update();
+        loadedModel = model;
+        frameLoadedModel();
         setModelStatus('ready');
       },
       undefined,
@@ -128,6 +144,7 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      frameLoadedModel();
     };
     resize();
     const resizeObserver = new ResizeObserver(resize);
