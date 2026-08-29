@@ -9,13 +9,18 @@ describe('WebMCPRunRail', () => {
     const user = userEvent.setup();
     render(<WebMCPRunRail workspace={createInitialWorkspace()} ready={false} toolCount={16} />);
 
-    expect(screen.getByRole('heading', { name: /WebMCP runs LaunchPad from the page/i })).toBeVisible();
-    expect(screen.getByText(/reads the shared workspace/i)).toBeVisible();
-    expect(screen.getByText(/calls one of 16 typed tools/i)).toBeVisible();
-    expect(screen.getByText(/same page updates/i)).toBeVisible();
+    expect(screen.getByText(/WebMCP control plane/i)).toBeVisible();
+    expect(screen.getByText('ChatGPT')).toBeVisible();
+    expect(screen.getByText(/16 typed tools/i)).toBeVisible();
+    expect(screen.getByText(/This page changes/i)).toBeVisible();
     expect(screen.getByText(/manual preview/i)).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: /copy demo prompt/i }));
+    await user.click(screen.getByRole('button', { name: /how it works/i }));
+    expect(screen.getByText(/reads the live LaunchPad workspace/i)).toBeVisible();
+    expect(screen.getByText(/calls a narrow, typed tool/i)).toBeVisible();
+    expect(screen.getByText(/same evidence graph and interface update/i)).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: /copy agent prompt/i }));
     expect(screen.getByRole('status')).toHaveTextContent(/prompt copied/i);
   });
 
@@ -34,7 +39,8 @@ describe('WebMCPRunRail', () => {
 
     render(<WebMCPRunRail workspace={workspace} ready toolCount={16} />);
 
-    expect(screen.getByText(/WebMCP connected/i)).toBeVisible();
+    expect(screen.getByText(/WebMCP control plane/i)).toBeVisible();
+    expect(screen.getByText('Connected')).toBeVisible();
     expect(screen.getByText('plan_research')).toBeVisible();
     expect(screen.getByText('Created six research lanes.')).toBeVisible();
   });

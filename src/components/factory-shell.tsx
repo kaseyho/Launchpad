@@ -9,6 +9,7 @@ import { ProblemDialog, SourceDialog } from './foundry-dialogs';
 import { InteractiveFactory } from './interactive-factory';
 import { LaunchBrief } from './launch-brief';
 import { WebMCPRunRail } from './webmcp-run-rail';
+import { WorkspaceArtifactDrawer } from './workspace-artifact-drawer';
 import { useFoundry } from '../hooks/use-foundry';
 import { useWebMCP } from '../hooks/use-webmcp';
 import type { FoundryWorkspace } from '../domain/types';
@@ -38,7 +39,7 @@ function StageSummary({ workspace }: { workspace: FoundryWorkspace }) {
       <div>
         <span className="section-kicker">Current artifact</span>
         <h2>{stageTitle(workspace.stage)}</h2>
-        <p>The miniature factory above shows where this workspace is now. Detailed evidence and decisions appear here as the launch advances.</p>
+        <p>The factory shows where this workspace is now. Evidence and decisions accumulate here as the launch advances.</p>
       </div>
       <dl>
         <div><dt>Research questions</dt><dd>{workspace.researchQuestions.length}</dd></div>
@@ -56,7 +57,9 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
   const [problemDialogOpen, setProblemDialogOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [artifactOpen, setArtifactOpen] = useState(false);
   const activityButtonRef = useRef<HTMLButtonElement>(null);
+  const artifactButtonRef = useRef<HTMLButtonElement>(null);
   const { workspace } = foundry;
   const webmcp = useWebMCP(foundry.service, foundry.acceptAgentTrace, foundry.acceptAgentExport);
   const progress = getStageProgress(workspace.stage);
@@ -66,6 +69,11 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
     window.setTimeout(() => activityButtonRef.current?.focus(), 0);
   }, []);
 
+  const closeArtifact = useCallback(() => {
+    setArtifactOpen(false);
+    window.setTimeout(() => artifactButtonRef.current?.focus(), 0);
+  }, []);
+
   const workbench = workspace.stage === 'FINALIZED' && workspace.blueprint ? (
     <BlueprintView workspace={workspace} traceNodes={foundry.traceNodes} onTrace={foundry.traceEvidence} onExport={foundry.exportBlueprint} />
   ) : workspace.candidates.length > 0 ? (
@@ -73,6 +81,11 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
   ) : (
     <StageSummary workspace={workspace} />
   );
+  const artifactLabel = workspace.stage === 'FINALIZED'
+    ? 'View blueprint'
+    : workspace.candidates.length > 0
+      ? 'View ideas'
+      : 'View workspace';
 
   return (
     <main className="launchpad-app" data-stage={workspace.stage}>
@@ -86,10 +99,15 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
           <strong>{workspace.title}</strong>
         </div>
         <div className="launch-header-actions">
-          <div className="launch-connection" data-connected={webmcp.ready}>
-            <span aria-hidden="true" />
-            {webmcp.ready ? 'WebMCP connected' : 'Manual ready'}
-          </div>
+          <button
+            ref={artifactButtonRef}
+            type="button"
+            className="workspace-artifact-trigger"
+            aria-expanded={artifactOpen}
+            onClick={() => setArtifactOpen(true)}
+          >
+            {artifactLabel}
+          </button>
           <button
             ref={activityButtonRef}
             type="button"
@@ -117,16 +135,10 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
           onEditProblem={() => setProblemDialogOpen(true)}
           onReset={foundry.resetWorkspace}
         />
-        <InteractiveFactory workspace={workspace} />
-        <WebMCPRunRail workspace={workspace} ready={webmcp.ready} toolCount={webmcp.toolCount} />
-      </section>
-
-      <section className="launch-workbench" aria-label="Launch workbench">
-        <div className="launch-workbench-header">
-          <div><span>Workspace artifact</span><strong>{stageTitle(workspace.stage)}</strong></div>
-          <p>{workspace.version > 0 ? `Version ${workspace.version} · persisted ${foundry.storageStatus}` : 'A traceable result will assemble here.'}</p>
+        <div className="launch-visual">
+          <InteractiveFactory workspace={workspace} />
+          <WebMCPRunRail workspace={workspace} ready={webmcp.ready} toolCount={webmcp.toolCount} />
         </div>
-        {workbench}
       </section>
 
       <ActivityDrawer
@@ -137,6 +149,14 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
         exportFilename={foundry.lastExport?.filename}
         onDownloadExport={foundry.downloadLastExport}
       />
+      <WorkspaceArtifactDrawer
+        open={artifactOpen}
+        onClose={closeArtifact}
+        title={stageTitle(workspace.stage)}
+        meta={workspace.version > 0 ? `Version ${workspace.version} · persisted ${foundry.storageStatus}` : 'A traceable result will assemble here.'}
+      >
+        {workbench}
+      </WorkspaceArtifactDrawer>
       <EvidenceInspector
         workspace={workspace}
         open={inspectorOpen}

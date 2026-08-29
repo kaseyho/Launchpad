@@ -32,6 +32,7 @@ export function WebMCPRunRail({
 }) {
   const latestAgentEvent = getLatestAgentEvent(workspace);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [expanded, setExpanded] = useState(false);
 
   const onCopy = async () => {
     try {
@@ -43,52 +44,43 @@ export function WebMCPRunRail({
   };
 
   return (
-    <aside className="webmcp-rail" aria-label="WebMCP agent run">
-      <div className="webmcp-rail-header">
+    <aside className="webmcp-dock" aria-label="WebMCP agent run">
+      <div className="webmcp-dock-main">
         <div className="webmcp-status" data-connected={ready}>
           <span aria-hidden="true" />
-          {ready ? 'WebMCP connected' : 'Manual preview'}
+          <div><small>WebMCP control plane</small><strong>{ready ? 'Connected' : 'Manual preview'}</strong></div>
         </div>
-        <span>{toolCount} typed tools</span>
+        <div className="webmcp-flow" aria-label="ChatGPT uses WebMCP tools to update this workspace">
+          <span>ChatGPT</span><i aria-hidden="true">→</i><span>{toolCount} typed tools</span><i aria-hidden="true">→</i><strong>This page changes</strong>
+        </div>
+        <div className="webmcp-dock-actions">
+          <button type="button" className="webmcp-copy" onClick={onCopy}>Copy agent prompt</button>
+          <button type="button" className="webmcp-explain" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
+            {expanded ? 'Hide explanation' : 'How it works'}
+          </button>
+        </div>
       </div>
 
-      <div className="webmcp-rail-intro">
-        <span className="section-kicker">Why WebMCP</span>
-        <h2>WebMCP runs LaunchPad from the page.</h2>
-        <p>It gives your agent narrow, inspectable actions inside the same workspace you are watching.</p>
-      </div>
-
-      <ol className="webmcp-steps">
-        <li><span>1</span><div><strong>Read</strong><p>The agent reads the shared workspace and its current stage.</p></div></li>
-        <li><span>2</span><div><strong>Act</strong><p>It calls one of {toolCount} typed tools with explicit side effects.</p></div></li>
-        <li><span>3</span><div><strong>Verify</strong><p>The same page updates, so you can inspect or correct the result.</p></div></li>
-      </ol>
-
-      <div className="webmcp-proof">
+      <div className="webmcp-latest" aria-live="polite">
         <span>Latest agent action</span>
         {latestAgentEvent ? (
-          <div className="webmcp-event" data-status={latestAgentEvent.status}>
-            <code>{latestAgentEvent.toolName}</code>
-            <p>{latestAgentEvent.outputSummary}</p>
-            <small>Workspace v{latestAgentEvent.workspaceVersion}</small>
-          </div>
+          <><code>{latestAgentEvent.toolName}</code><strong>{latestAgentEvent.outputSummary}</strong><small>v{latestAgentEvent.workspaceVersion}</small></>
         ) : (
-          <p className="webmcp-waiting">No agent call yet. Manual actions still use the same underlying service.</p>
+          <strong>No agent call yet. Manual actions use the same service.</strong>
         )}
-      </div>
-
-      <div className="webmcp-prompt">
-        <p><strong>Demo it:</strong> ask ChatGPT to operate the research flow while you watch the factory and audit trail change.</p>
-        <button type="button" onClick={onCopy}>Copy demo prompt</button>
-        <div className="copy-feedback" role="status" aria-live="polite">
-          {copyState === 'copied' ? 'Prompt copied.' : copyState === 'error' ? 'Copy failed. Select the prompt manually.' : ''}
+        <div className="copy-feedback" role="status">
+          {copyState === 'copied' ? 'Prompt copied.' : copyState === 'error' ? 'Copy failed.' : ''}
         </div>
       </div>
 
-      <div className="webmcp-distinction">
-        <span>No pasted chatbot</span>
-        <span>No parallel demo state</span>
-      </div>
+      {expanded && (
+        <div className="webmcp-explanation">
+          <div><span>01</span><strong>Read</strong><p>ChatGPT reads the live LaunchPad workspace.</p></div>
+          <div><span>02</span><strong>Act</strong><p>It calls a narrow, typed tool—not a simulated chat command.</p></div>
+          <div><span>03</span><strong>Verify</strong><p>The same evidence graph and interface update for you to inspect.</p></div>
+          <p className="webmcp-distinction">One shared state. Inspectable actions. Human override stays available.</p>
+        </div>
+      )}
     </aside>
   );
 }

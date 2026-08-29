@@ -26,26 +26,22 @@ export function LaunchBrief({
 
   return (
     <section className="launch-brief" aria-label="Problem brief">
-      <span className="section-kicker">Current launch · {activeStation.name}</span>
-      <h1>Turn scattered evidence into an idea you can defend.</h1>
-      <p className="launch-deck">LaunchPad gives people and agents one shared workspace for researching a problem, challenging the evidence, and deciding what is worth testing.</p>
+      <span className="section-kicker">Evidence-to-idea workspace · {activeStation.shortName}</span>
+      <h1>An idea that can show its work.</h1>
+      <p className="launch-deck">ChatGPT uses WebMCP to run LaunchPad’s research tools. You watch the evidence become a defensible idea.</p>
 
       <div className="brief-card" data-empty={workspace.stage === 'EMPTY'}>
         {workspace.stage === 'EMPTY' ? (
           <>
-            <span>Start with the decision</span>
-            <strong>No problem defined yet.</strong>
-            <p>Load the curated demo or describe the situation, audience, and outcome yourself.</p>
+            <span>Ready for input</span>
+            <strong>Start with a messy problem.</strong>
+            <p>Load the demo or define your own brief.</p>
           </>
         ) : (
           <>
-            <span>{workspace.title}</span>
+            <span>Current problem</span>
             <strong>{brief.problemStatement}</strong>
-            <dl>
-              <div><dt>Audience</dt><dd>{brief.targetAudience}</dd></div>
-              <div><dt>Outcome</dt><dd>{brief.desiredOutcome}</dd></div>
-              <div><dt>Constraints</dt><dd>{brief.constraints.length}</dd></div>
-            </dl>
+            <p>{brief.targetAudience} · {brief.desiredOutcome}</p>
           </>
         )}
       </div>
@@ -58,15 +54,18 @@ export function LaunchBrief({
 
       <button className="launch-primary-action" type="button" onClick={onPrimaryAction} disabled={workspace.stage === 'FINALIZED'}>
         <span>{primaryActionLabel.toLowerCase()}</span>
-        <span aria-hidden="true">↗</span>
+        <span aria-hidden="true">→</span>
       </button>
 
-      <div className="launch-secondary-actions" aria-label="Manual workspace controls">
-        <button type="button" onClick={onEditProblem}>{workspace.stage === 'EMPTY' ? 'Define problem' : 'Edit brief'}</button>
-        <button type="button" onClick={onAddSource}>Add source</button>
-        <button type="button" onClick={onInspectEvidence} disabled={workspace.findings.length === 0}>Inspect evidence</button>
-        <button type="button" onClick={onReset} disabled={workspace.stage === 'EMPTY'}>Reset</button>
-      </div>
+      <details className="launch-more-actions">
+        <summary>Manual controls</summary>
+        <div className="launch-secondary-actions" aria-label="Manual workspace controls">
+          <button type="button" onClick={onEditProblem}>{workspace.stage === 'EMPTY' ? 'Define problem' : 'Edit brief'}</button>
+          <button type="button" onClick={onAddSource}>Add source</button>
+          <button type="button" onClick={onInspectEvidence} disabled={workspace.findings.length === 0}>Inspect evidence</button>
+          <button type="button" onClick={onReset} disabled={workspace.stage === 'EMPTY'}>Reset workspace</button>
+        </div>
+      </details>
     </section>
   );
 }

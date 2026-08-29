@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialWorkspace } from '../domain/foundry-service';
 import { InteractiveFactory } from './interactive-factory';
@@ -13,27 +12,24 @@ describe('InteractiveFactory', () => {
     vi.restoreAllMocks();
   });
 
-  it('offers keyboard-equivalent station inspection when WebGL is unavailable', async () => {
-    const user = userEvent.setup();
+  it('keeps the current station visible when WebGL is unavailable', async () => {
     render(<InteractiveFactory workspace={createInitialWorkspace()} />);
 
     expect(screen.getByLabelText(/interactive research factory/i)).toBeVisible();
     expect(await screen.findByText(/3d unavailable/i)).toBeVisible();
-
-    await user.click(screen.getByRole('button', { name: /evidence lab/i }));
-
-    expect(screen.getByRole('status')).toHaveTextContent(/Evidence Lab/);
-    expect(screen.getByRole('status')).toHaveTextContent(/0 findings/);
-    expect(screen.getByRole('button', { name: /evidence lab/i })).toHaveAttribute('aria-pressed', 'true');
+    const caption = screen.getByText('Source Dock').closest('.factory-caption');
+    expect(caption).toHaveTextContent(/Source Dock/);
+    expect(caption).toHaveTextContent(/0 sources/);
   });
 
-  it('makes the current workspace station clear without relying on animation', () => {
+  it('makes the current workspace station clear without relying on animation', async () => {
     const workspace = createInitialWorkspace();
     workspace.stage = 'CANDIDATES_READY';
     render(<InteractiveFactory workspace={workspace} />);
 
-    expect(screen.getByRole('button', { name: /idea forge/i })).toHaveAttribute('data-state', 'active');
-    expect(screen.getByRole('button', { name: /review bay/i })).toHaveAttribute('data-state', 'complete');
-    expect(screen.getByRole('button', { name: /stress chamber/i })).toHaveAttribute('data-state', 'idle');
+    await screen.findByText(/3d unavailable/i);
+    const caption = screen.getByText('Idea Forge').closest('.factory-caption');
+    expect(caption).toHaveTextContent(/Idea Forge/);
+    expect(caption).toHaveTextContent(/0 idea candidates/);
   });
 });

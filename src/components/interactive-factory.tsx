@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -9,8 +9,6 @@ import {
   FACTORY_STATIONS,
   getActiveStationKey,
   getStationMetric,
-  getStationState,
-  type FactoryStationKey,
 } from '../presentation/factory-stages';
 import { FACTORY_MODEL_URL, fitFactoryModel, prepareFactoryModel } from '../presentation/factory-model';
 
@@ -19,17 +17,9 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
   const frameRef = useRef<HTMLDivElement>(null);
   const [webglFailed, setWebglFailed] = useState(false);
   const [modelStatus, setModelStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
-  const [selection, setSelection] = useState<{ stage: FoundryWorkspace['stage']; key: FactoryStationKey }>(() => ({
-    stage: workspace.stage,
-    key: getActiveStationKey(workspace.stage),
-  }));
-  const selectedKey = selection.stage === workspace.stage ? selection.key : getActiveStationKey(workspace.stage);
-
-  const selectedStation = useMemo(
-    () => FACTORY_STATIONS.find((station) => station.key === selectedKey) ?? FACTORY_STATIONS[0],
-    [selectedKey],
-  );
-  const selectedMetric = getStationMetric(workspace, selectedStation.key);
+  const activeKey = getActiveStationKey(workspace.stage);
+  const activeStation = FACTORY_STATIONS.find((station) => station.key === activeKey) ?? FACTORY_STATIONS[0];
+  const activeMetric = getStationMetric(workspace, activeStation.key);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -194,30 +184,10 @@ export function InteractiveFactory({ workspace }: { workspace: FoundryWorkspace 
         <div className="factory-orbit-hint" aria-hidden="true">Drag to orbit</div>
       </div>
 
-      <div className="factory-object-label" aria-hidden="true"><span>Factory model</span><strong>Live research line</strong></div>
-
-      <div className="factory-station-controls" aria-label="Factory stations">
-        {FACTORY_STATIONS.map((station) => (
-          <button
-            type="button"
-            key={station.key}
-            onClick={() => setSelection({ stage: workspace.stage, key: station.key })}
-            aria-label={`${station.name}, ${getStationMetric(workspace, station.key).value} ${getStationMetric(workspace, station.key).label}`}
-            aria-pressed={selectedKey === station.key}
-            data-state={getStationState(workspace.stage, station.key)}
-          >
-            <span aria-hidden="true" />
-            {station.shortName}
-          </button>
-        ))}
-      </div>
-
-      <div className="factory-station-detail" role="status" aria-live="polite">
-        <div>
-          <span>{selectedStation.name}</span>
-          <strong>{selectedMetric.value} {selectedMetric.label}</strong>
-        </div>
-        <p>{selectedStation.description}</p>
+      <div className="factory-caption" role="status" aria-live="polite">
+        <span><i aria-hidden="true" /> Current station</span>
+        <strong>{activeStation.name}</strong>
+        <small>{activeMetric.value} {activeMetric.label}</small>
       </div>
     </section>
   );
