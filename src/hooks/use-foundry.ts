@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { createFoundryService, createInitialWorkspace, type FoundryService } from '../domain/foundry-service';
 import type { FoundryWorkspace, ServiceFailure, ServiceSuccess, TraceNode } from '../domain/types';
+import { isAbortError, saveWorkspaceSnapshot } from '../persistence/client-workspace';
 
 const DEMO_BRIEF = {
   problemType: 'product opportunity',
@@ -80,18 +81,19 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test' || !persistenceReady) return;
+    const controller = new AbortController();
     const timeout = window.setTimeout(() => {
       setStorageStatus('saving');
-      void fetch('/api/workspace', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ workspace }),
-        keepalive: true,
-      }).then((response) => {
-        setStorageStatus(response.ok ? 'saved' : 'offline');
-      }).catch(() => setStorageStatus('offline'));
+      void saveWorkspaceSnapshot(workspace, controller.signal)
+        .then((saved) => setStorageStatus(saved ? 'saved' : 'offline'))
+        .catch((error) => {
+          if (!isAbortError(error)) setStorageStatus('offline');
+        });
     }, 350);
-    return () => window.clearTimeout(timeout);
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
   }, [persistenceReady, workspace]);
 
   const report = useCallback((result: AnyResult) => {
