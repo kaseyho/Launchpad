@@ -38,6 +38,11 @@ describe('FactoryShell autonomous workflow', () => {
     expect(screen.getByText(/no api key, source hunting, or manual research workflow/i)).toBeVisible();
     expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/optional agent control/i);
     expect(screen.queryByRole('dialog', { name: /activity/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /sustainable launchpad/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /plans/i }));
+    expect(screen.getByRole('dialog', { name: /sustainable launchpad/i })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: /close plans/i }));
 
     await user.click(screen.getByRole('button', { name: /activity/i }));
     expect(screen.getByRole('dialog', { name: /activity/i })).toBeVisible();

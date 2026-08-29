@@ -7,6 +7,7 @@ import { EvidenceInspector } from './evidence-inspector';
 import { InteractiveFactory } from './interactive-factory';
 import { LaunchBrief } from './launch-brief';
 import { ResearchFindings } from './research-findings';
+import { SubscriptionDemo } from './subscription-demo';
 import { WebMCPRunRail } from './webmcp-run-rail';
 import { useFoundry } from '../hooks/use-foundry';
 import { useWebMCP } from '../hooks/use-webmcp';
@@ -33,7 +34,9 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
   const foundry = useFoundry(initialWorkspace);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const activityButtonRef = useRef<HTMLButtonElement>(null);
+  const subscriptionButtonRef = useRef<HTMLButtonElement>(null);
   const { workspace } = foundry;
   const webmcp = useWebMCP(foundry.service, foundry.acceptAgentTrace, foundry.acceptAgentExport, foundry.startResearch);
   const progress = getStageProgress(workspace.stage);
@@ -41,6 +44,11 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
   const closeActivity = useCallback(() => {
     setActivityOpen(false);
     window.setTimeout(() => activityButtonRef.current?.focus(), 0);
+  }, []);
+
+  const closeSubscription = useCallback(() => {
+    setSubscriptionOpen(false);
+    window.setTimeout(() => subscriptionButtonRef.current?.focus(), 0);
   }, []);
 
   return (
@@ -55,6 +63,16 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
           <strong>{workspace.title}</strong>
         </div>
         <div className="launch-header-actions">
+          <button
+            ref={subscriptionButtonRef}
+            type="button"
+            className="subscription-trigger"
+            aria-controls="subscription-demo"
+            aria-expanded={subscriptionOpen}
+            onClick={() => setSubscriptionOpen(true)}
+          >
+            Plans <span>Demo</span>
+          </button>
           <button
             ref={activityButtonRef}
             type="button"
@@ -105,6 +123,7 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
         exportFilename={foundry.lastExport?.filename}
         onDownloadExport={foundry.downloadLastExport}
       />
+      <SubscriptionDemo open={subscriptionOpen} onClose={closeSubscription} />
       <EvidenceInspector
         workspace={workspace}
         open={inspectorOpen}

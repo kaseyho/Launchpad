@@ -8,6 +8,12 @@ LaunchPad is an autonomous research-to-solution web app built for the [WebMCP Ch
 
 No API key, source upload, prompt copying, or manual research workflow is required.
 
+## Subscription strategy demo
+
+The header's **Plans** control opens an interactive revenue-model prototype. It compares a proposed Free, Builder, and Studio offering; makes usage limits, renewal terms, and cancellation clear; and lets a judge simulate activation. The demo never asks for a card, creates an account, or makes a billing request. Its reversible state is stored only in the current browser, so the judging path does not depend on Supabase, Stripe, or a dormant backend.
+
+The pricing and monthly recurring revenue figures are explicitly presented as hypotheses, not customer traction. A production version could connect the same plan-selection flow to an authenticated billing provider after pricing and willingness-to-pay have been validated.
+
 ## Product flow
 
 1. Enter a real problem statement.

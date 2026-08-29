@@ -59,10 +59,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .launch-connection > span, .webmcp-status > span { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 0; background: #6f7284; }
 .launch-connection[data-connected='true'], .webmcp-status[data-connected='true'] { color: var(--mint); }
 .launch-connection[data-connected='true'] > span, .webmcp-status[data-connected='true'] > span { background: var(--mint); box-shadow: 2px 2px 0 #65792f; }
-.activity-trigger, .workspace-artifact-trigger { border: 2px solid var(--line); border-radius: 0; background: var(--ink-soft); color: var(--paper); padding: 8px 11px; cursor: pointer; font: 600 10px/1 var(--font-geist-mono), monospace; text-transform: uppercase; display: flex; align-items: center; gap: 8px; transition: transform 150ms cubic-bezier(.85,0,.15,1), border-color 150ms cubic-bezier(.85,0,.15,1); }
+.activity-trigger, .workspace-artifact-trigger, .subscription-trigger { border: 2px solid var(--line); border-radius: 0; background: var(--ink-soft); color: var(--paper); padding: 8px 11px; cursor: pointer; font: 600 10px/1 var(--font-geist-mono), monospace; text-transform: uppercase; display: flex; align-items: center; gap: 8px; transition: transform 150ms cubic-bezier(.85,0,.15,1), border-color 150ms cubic-bezier(.85,0,.15,1); }
 .workspace-artifact-trigger { border-color: rgba(99,209,210,.48); color: var(--violet-bright); }
-.activity-trigger:hover, .workspace-artifact-trigger:hover { border-color: var(--violet-bright); transform: translate(-2px,-2px); }
+.activity-trigger:hover, .workspace-artifact-trigger:hover, .subscription-trigger:hover { border-color: var(--violet-bright); transform: translate(-2px,-2px); }
 .activity-trigger span { min-width: 18px; height: 18px; display: grid; place-items: center; border-radius: 0; background: var(--coral); color: #19121a; font: 700 8px/1 var(--font-geist-mono), monospace; }
+.subscription-trigger { border-color: rgba(184,220,88,.55); }
+.subscription-trigger span { padding: 4px 5px; background: var(--mint); color: #182016; font: 750 7px/1 var(--font-geist-mono), monospace; }
 .launch-progress { height: 2px; background: rgba(255,255,255,.05); position: relative; z-index: 5; }
 .launch-progress > span { display: block; height: 100%; background: var(--mint); transition: width 260ms steps(8,end); }
 
@@ -428,6 +430,68 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .activity-empty strong { color: var(--paper); font-size: 16px; }
 .activity-export { width: 100%; margin-top: 18px; border: 0; background: var(--paper); color: var(--paper-ink); padding: 13px; cursor: pointer; }
 
+.subscription-backdrop { position: fixed; inset: 0; z-index: 85; background: rgba(7,8,16,.86); display: flex; justify-content: flex-end; }
+.subscription-drawer { width: min(980px,100%); height: 100%; overflow: auto; background: var(--paper); color: var(--paper-ink); border-left: 3px solid var(--paper-ink); box-shadow: -8px 0 0 var(--violet); animation: drawer-in 200ms cubic-bezier(.85,0,.15,1); }
+.subscription-header { position: sticky; top: 0; z-index: 5; min-height: 118px; padding: 24px clamp(24px,4vw,54px); border-bottom: 3px solid var(--paper-ink); background: var(--paper); display: flex; justify-content: space-between; align-items: flex-start; gap: 28px; }
+.subscription-header > div { max-width: 700px; }
+.subscription-header span, .subscription-section-heading span { color: #3656a4; font: 750 8px/1 var(--font-geist-mono), monospace; letter-spacing: .1em; text-transform: uppercase; }
+.subscription-header h2 { margin: 10px 0 7px; font-family: var(--font-pixel), var(--font-geist-mono), monospace; font-size: clamp(28px,4vw,46px); line-height: .95; letter-spacing: -.045em; text-transform: uppercase; }
+.subscription-header p { max-width: 660px; margin: 0; color: var(--muted-dark); font-size: 12px; line-height: 1.5; }
+.subscription-header button { border: 2px solid var(--paper-ink); background: transparent; color: var(--paper-ink); padding: 8px 10px; cursor: pointer; font: 700 8px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
+.subscription-header button:hover { background: var(--paper-ink); color: var(--paper); }
+.subscription-demo-notice { min-height: 52px; padding: 12px clamp(24px,4vw,54px); background: var(--mint); color: #192015; display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 18px; border-bottom: 2px solid var(--paper-ink); }
+.subscription-demo-notice strong { font: 800 9px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
+.subscription-demo-notice span { font-size: 11px; line-height: 1.4; }
+.subscription-section { padding: clamp(30px,4vw,54px); border-bottom: 2px solid var(--paper-ink); }
+.subscription-section-heading { margin-bottom: 24px; display: grid; grid-template-columns: minmax(320px,1fr) minmax(240px,.68fr); gap: 34px; align-items: end; }
+.subscription-section-heading h3 { margin: 10px 0 0; font-family: var(--font-pixel), var(--font-geist-mono), monospace; font-size: clamp(24px,3vw,36px); line-height: 1; letter-spacing: -.035em; text-transform: uppercase; }
+.subscription-section-heading p { margin: 0; color: var(--muted-dark); font-size: 11px; line-height: 1.5; }
+.subscription-plans { border-top: 3px solid var(--paper-ink); }
+.subscription-plans > button { width: 100%; min-height: 106px; padding: 16px 14px; border: 0; border-bottom: 1px solid var(--line-dark); background: transparent; color: inherit; display: grid; grid-template-columns: 20px minmax(150px,.78fr) 100px minmax(135px,.65fr) minmax(220px,1.2fr); align-items: center; gap: 14px; text-align: left; cursor: pointer; position: relative; }
+.subscription-plans > button:hover { background: rgba(83,120,206,.08); }
+.subscription-plans > button[data-selected='true'] { background: var(--paper-ink); color: var(--paper); }
+.subscription-plan-select { width: 12px; height: 12px; border: 2px solid currentColor; }
+.subscription-plans > button[data-selected='true'] .subscription-plan-select { background: var(--mint); border-color: var(--mint); box-shadow: inset 0 0 0 2px var(--paper-ink); }
+.subscription-plan-name, .subscription-plan-price { display: grid; gap: 5px; }
+.subscription-plan-name strong { font-family: var(--font-pixel), var(--font-geist-mono), monospace; font-size: 15px; text-transform: uppercase; }
+.subscription-plan-name small, .subscription-plan-price small { color: var(--muted-dark); font: 600 8px/1.3 var(--font-geist-mono), monospace; }
+.subscription-plans > button[data-selected='true'] small { color: var(--muted); }
+.subscription-plan-price strong { font-family: var(--font-pixel), var(--font-geist-mono), monospace; font-size: 24px; line-height: 1; }
+.subscription-plan-limit { font: 700 10px/1.35 var(--font-geist-mono), monospace; }
+.subscription-plan-features { color: var(--muted-dark); font-size: 10px; line-height: 1.5; }
+.subscription-plans > button[data-selected='true'] .subscription-plan-features { color: #c5c7d0; }
+.subscription-plans > button em { position: absolute; right: 12px; top: 8px; color: #3656a4; font: 750 7px/1 var(--font-geist-mono), monospace; font-style: normal; text-transform: uppercase; }
+.subscription-plans > button[data-selected='true'] em { color: var(--mint); }
+.subscription-checkout { background: #f6e7b6; }
+.subscription-review-grid { display: grid; grid-template-columns: minmax(320px,1fr) minmax(300px,.8fr); border: 3px solid var(--paper-ink); }
+.subscription-review-grid dl { margin: 0; padding: 10px 24px; }
+.subscription-review-grid dl > div { min-height: 58px; border-bottom: 1px solid var(--line-dark); display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 18px; }
+.subscription-review-grid dl > div:last-child { border-bottom: 0; }
+.subscription-review-grid dt { color: var(--muted-dark); font: 700 8px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
+.subscription-review-grid dd { margin: 0; font-size: 13px; font-weight: 650; line-height: 1.35; }
+.subscription-review-grid dd small { color: var(--muted-dark); font: 600 8px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
+.subscription-confirm { padding: 24px; border-left: 3px solid var(--paper-ink); background: var(--paper-ink); color: var(--paper); display: flex; flex-direction: column; align-items: flex-start; }
+.subscription-confirm > span { color: var(--mint); font: 750 8px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
+.subscription-confirm > strong { margin-top: 9px; font-family: var(--font-pixel), var(--font-geist-mono), monospace; font-size: 25px; text-transform: uppercase; }
+.subscription-confirm p { min-height: 40px; margin: 12px 0 20px; color: #c5c7d0; font-size: 10px; line-height: 1.5; }
+.subscription-confirm > button:not(.subscription-reset) { width: 100%; border: 2px solid var(--paper); background: var(--paper); color: var(--paper-ink); padding: 13px; cursor: pointer; font: 750 9px/1.2 var(--font-pixel), var(--font-geist-mono), monospace; text-transform: uppercase; box-shadow: 4px 4px 0 var(--coral); }
+.subscription-confirm > button:not(.subscription-reset):hover:not(:disabled) { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--coral); }
+.subscription-confirm > button:disabled { opacity: .55; cursor: default; box-shadow: none; }
+.subscription-reset { margin-top: 15px; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--muted); padding: 2px 0; cursor: pointer; font: 650 8px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
+.subscription-reset:hover { color: var(--paper); }
+.subscription-business { border-bottom: 0; }
+.subscription-math { border-block: 3px solid var(--paper-ink); }
+.subscription-math > div { min-height: 58px; padding: 0 12px; border-bottom: 1px solid var(--line-dark); display: grid; grid-template-columns: minmax(150px,.7fr) minmax(160px,1fr) minmax(150px,.6fr); align-items: center; gap: 20px; }
+.subscription-math > div:last-child { border-bottom: 0; }
+.subscription-math span { color: var(--muted-dark); font: 700 8px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
+.subscription-math strong { font: 650 11px/1 var(--font-geist-mono), monospace; }
+.subscription-math em { justify-self: end; color: #3656a4; font-family: var(--font-pixel), var(--font-geist-mono), monospace; font-size: 16px; font-style: normal; }
+.subscription-math-total { background: var(--paper-ink); color: var(--paper); }
+.subscription-math-total span { color: var(--mint); }
+.subscription-math-total em { color: var(--mint); }
+.subscription-hypothesis { margin: 20px 0 0; color: var(--muted-dark); font-size: 11px; line-height: 1.6; }
+.subscription-hypothesis strong { color: var(--paper-ink); }
+
 .dialog-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(7,8,16,.84); display: grid; place-items: center; padding: 20px; }
 .foundry-dialog { width: min(1040px,100%); max-height: min(780px,calc(100svh - 40px)); overflow: auto; background: var(--ink-soft); color: var(--paper); border: 3px solid var(--violet-bright); border-radius: 0; box-shadow: 8px 8px 0 var(--violet); }
 .dialog-header { position: sticky; top: 0; z-index: 2; background: var(--ink-soft); display: flex; justify-content: space-between; align-items: center; padding: 17px 20px; border-bottom: 2px solid var(--line); }
@@ -514,12 +578,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .report-test dl { grid-template-columns: repeat(2,1fr); }
   .report-test dl > div:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid var(--line-dark); }
   .report-test dl > div:nth-child(4) { border-top: 1px solid var(--line-dark); }
+  .subscription-drawer { width: min(820px,100%); }
+  .subscription-plans > button { grid-template-columns: 20px minmax(140px,.8fr) 90px minmax(150px,1fr); }
+  .subscription-plan-features { grid-column: 2 / -1; }
 }
 
 @media (max-width: 560px) {
   .launch-header { padding: 13px 16px; gap: 12px; }
   .launch-wordmark strong { font-size: 17px; }
-  .activity-trigger, .workspace-artifact-trigger { padding: 8px 9px; }
+  .activity-trigger, .workspace-artifact-trigger, .subscription-trigger { padding: 8px 9px; }
+  .subscription-trigger span { display: none; }
   .workspace-artifact-trigger { max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .launch-workspace { padding: 40px 18px 52px; gap: 28px; }
   .launch-brief h1 { margin-top: 16px; font-size: clamp(38px, 11vw, 52px); }
@@ -585,6 +653,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .research-ledger article { padding-right: 2px; }
   .research-ledger article footer { flex-direction: column; }
   .activity-drawer { padding: 20px 16px; }
+  .subscription-drawer { border-left: 0; animation: none; }
+  .subscription-header { min-height: 0; padding: 20px 18px; }
+  .subscription-header h2 { font-size: 28px; }
+  .subscription-header p { display: none; }
+  .subscription-demo-notice { padding: 12px 18px; grid-template-columns: 1fr; gap: 5px; }
+  .subscription-section { padding: 32px 18px; }
+  .subscription-section-heading { grid-template-columns: 1fr; gap: 12px; }
+  .subscription-plans > button { min-height: 0; padding: 16px 8px; grid-template-columns: 18px minmax(120px,1fr) 72px; gap: 9px; }
+  .subscription-plan-limit, .subscription-plan-features { grid-column: 2 / -1; }
+  .subscription-plan-limit { margin-top: 3px; }
+  .subscription-plans > button em { position: static; grid-column: 2 / -1; }
+  .subscription-review-grid { grid-template-columns: 1fr; }
+  .subscription-review-grid dl { padding: 8px 16px; }
+  .subscription-review-grid dl > div { grid-template-columns: 105px 1fr; }
+  .subscription-confirm { border-left: 0; border-top: 3px solid var(--paper-ink); }
+  .subscription-math > div { padding-block: 14px; grid-template-columns: 1fr auto; gap: 7px 14px; }
+  .subscription-math strong { grid-column: 1; }
+  .subscription-math em { grid-column: 2; grid-row: 1 / span 2; }
   .inspector-layout { grid-template-columns: 1fr; }
   .finding-list { max-height: 190px; border-right: 0; border-bottom: 1px solid var(--line); }
   .finding-context { grid-template-columns: 1fr; }
@@ -595,4 +681,5 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .activity-drawer { animation: none; }
   .artifact-drawer { animation: none; }
+  .subscription-drawer { animation: none; }
 }

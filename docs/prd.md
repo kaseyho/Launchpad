@@ -2885,6 +2885,15 @@ The project is ready when all of the following are true:
 - Demo video under three minutes with audio.
     
 - Devpost description explains what humans and agents can do together.
+
+## Revenue-model demonstration
+
+- The core product flow remains one input: the problem statement.
+- A separate Plans drawer demonstrates the proposed Free, Builder, and Studio packaging.
+- The upgrade review shows exact price, billing interval, renewal, cancellation, and usage limits beside the action.
+- The activation is explicitly a simulation: it creates no account, accepts no payment details, and makes no billing request.
+- Demo plan state is reversible and stored only in the browser so it remains available without an external database.
+- Revenue math is labeled as an illustrative hypothesis, never as paying-customer traction.
     
 
 ---

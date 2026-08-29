@@ -15,5 +15,6 @@ describe('LaunchPad first product slice', () => {
     expect(screen.getByText(/no api key, source hunting, or manual research workflow/i)).toBeVisible();
     expect(screen.getByText(/optional agent control/i)).toBeVisible();
     expect(screen.getByRole('button', { name: /activity/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: /plans/i })).toHaveAttribute('aria-expanded', 'false');
   });
 });
