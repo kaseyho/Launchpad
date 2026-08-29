@@ -101,6 +101,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .factory-fallback { position: absolute; z-index: 3; inset: 16% 14%; border: 1px solid var(--line); border-radius: 50%; background: radial-gradient(circle, rgba(149,135,255,.15), rgba(13,12,18,.8)); display: grid; place-content: center; justify-items: center; gap: 8px; text-align: center; }
 .factory-fallback span { color: var(--amber); font: 650 9px/1 var(--font-geist-mono), monospace; letter-spacing: .1em; text-transform: uppercase; }
 .factory-fallback strong { max-width: 220px; font-size: 13px; font-weight: 500; }
+.factory-model-loading { position: absolute; z-index: 4; left: 50%; bottom: 34px; transform: translateX(-50%); color: rgba(238,233,250,.66); font: 560 9px/1 var(--font-geist-mono), monospace; letter-spacing: .09em; text-transform: uppercase; }
+.factory-model-loading::after { content: ''; display: inline-block; width: 18px; height: 1px; margin-left: 8px; vertical-align: middle; background: var(--violet-bright); transform-origin: left; animation: model-loading 1.2s cubic-bezier(.2,.8,.2,1) infinite; }
 .factory-object-label { width: min(520px, 92%); margin: 1px auto 4px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; color: var(--muted); font: 560 8px/1 var(--font-geist-mono), monospace; letter-spacing: .1em; text-transform: uppercase; }
 .factory-object-label strong { color: var(--paper); font-weight: 600; }
 .factory-station-controls { display: flex; justify-content: center; gap: 5px; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding: 5px 2px 2px; }
@@ -316,6 +318,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .dialog-error { margin: 8px 20px; color: var(--coral); font-size: 11px; }
 
 @keyframes drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes model-loading { 0% { transform: scaleX(.12); opacity: .35; } 55% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(.12); opacity: .35; } }
 
 @media (max-width: 1240px) {
   .launch-workspace { grid-template-columns: minmax(280px,.85fr) minmax(450px,1.2fr); align-items: start; }
