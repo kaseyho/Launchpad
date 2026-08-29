@@ -1,6 +1,8 @@
 import type { FoundryService } from '../domain/foundry-service';
 import type { EvidenceType, ProblemBrief, ServiceResult, Source, SourceLane, TraceNode } from '../domain/types';
 
+export const WEBMCP_TOOL_COUNT = 16;
+
 type JSONSchema = {
   type: 'object';
   properties: Record<string, Record<string, unknown>>;

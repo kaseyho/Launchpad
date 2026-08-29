@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { FoundryService } from '../domain/foundry-service';
 import type { TraceNode } from '../domain/types';
-import { registerFoundryTools } from '../webmcp/register-tools';
+import { registerFoundryTools, WEBMCP_TOOL_COUNT } from '../webmcp/register-tools';
 
 interface ExportFile {
   filename: string;
@@ -31,5 +31,5 @@ export function useWebMCP(
     };
   }, [onExport, onTrace, service]);
 
-  return ready;
+  return { ready, toolCount: WEBMCP_TOOL_COUNT };
 }
