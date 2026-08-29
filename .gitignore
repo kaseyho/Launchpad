@@ -37,3 +37,10 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# local demo production intermediates
+/artifacts/demo/*.aiff
+/artifacts/demo/clip-*.mp4
+/artifacts/demo/*.png
+/artifacts/demo/narration-*.txt
+/artifacts/demo/clips.ffconcat
