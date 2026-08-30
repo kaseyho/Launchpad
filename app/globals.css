@@ -137,7 +137,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .launch-visual { width: 100%; max-width: 880px; min-width: 0; justify-self: center; display: grid; align-content: center; gap: clamp(12px, 1.8vh, 18px); }
 .interactive-factory { min-width: 0; width: 100%; display: grid; justify-items: stretch; align-self: center; }
-.factory-canvas-frame { width: 100%; height: clamp(420px, 54vh, 560px); min-height: 420px; position: relative; isolation: isolate; }
+.factory-canvas-frame { width: 100%; height: clamp(460px, 58vh, 610px); min-height: 460px; position: relative; isolation: isolate; }
 .factory-canvas-frame canvas { width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: grab; position: relative; z-index: 2; }
 .factory-canvas-frame canvas:active { cursor: grabbing; }
 .factory-aura { position: absolute; z-index: -1; left: 7%; right: 7%; top: 4%; bottom: 5%; border: 1px solid rgba(99,209,210,.16); background: rgba(83,120,206,.035); box-shadow: 12px 12px 0 rgba(236,106,98,.04); transition: border-color 160ms steps(2,end), box-shadow 160ms steps(2,end); }
@@ -150,6 +150,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .factory-view-controls button:hover:not(:disabled), .factory-view-controls button:focus-visible { border-color: var(--paper); color: var(--paper); transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(83,120,206,.18); }
 .factory-view-controls button:focus-visible { outline: 2px solid var(--violet-bright); outline-offset: 3px; }
 .factory-view-controls button:disabled { opacity: .38; cursor: default; box-shadow: none; }
+.factory-asset-credit { position: absolute; z-index: 5; left: 8%; bottom: 7px; display: flex; gap: 5px; color: rgba(238,233,250,.46); font: 550 9px/1 var(--font-geist-mono), monospace; }
+.factory-asset-credit a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
+.factory-asset-credit a:hover, .factory-asset-credit a:focus-visible { color: var(--paper); border-color: currentColor; }
+.factory-asset-credit a:focus-visible { outline: 2px solid var(--violet-bright); outline-offset: 3px; }
 .factory-orbit-hint { position: absolute; z-index: 4; left: 50%; bottom: 7px; transform: translateX(-50%); white-space: nowrap; color: rgba(238,233,250,.74); font: 550 10px/1 var(--font-geist-mono), monospace; letter-spacing: .06em; }
 .factory-fallback { position: absolute; z-index: 3; inset: 22% 18%; border: 2px solid var(--line); border-radius: 0; background: var(--ink-soft); display: grid; place-content: center; justify-items: center; gap: 8px; text-align: center; box-shadow: 6px 6px 0 rgba(83,120,206,.24); }
 .factory-fallback span { color: var(--amber); font: 650 10px/1 var(--font-geist-mono), monospace; letter-spacing: .1em; text-transform: uppercase; }
@@ -697,7 +701,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .launch-brief h1 { font-size: clamp(42px, 8vw, 60px); }
   .launch-visual { max-width: 760px; }
   .interactive-factory { max-width: 720px; justify-self: center; }
-  .factory-canvas-frame { height: min(68vw,520px); min-height: 400px; }
+  .factory-canvas-frame { height: min(72vw,560px); min-height: 420px; }
   .candidate-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 10px; }
   .candidate-card { flex: 0 0 min(78vw,420px); scroll-snap-align: start; }
   .proof-stack { grid-template-columns: repeat(2,1fr); }
@@ -732,6 +736,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .factory-aura { left: 2%; right: 2%; }
   .factory-view-controls { top: 12px; right: 12px; }
   .factory-view-controls button { padding: 7px 8px; }
+  .factory-asset-credit { left: 12px; bottom: 25px; }
+  .factory-asset-credit a:first-child { display: none; }
   .factory-production-console { grid-template-columns: 1fr; }
   .factory-production-node, .factory-production-now { min-height: 82px; padding: 11px 13px; }
   .factory-production-input { border-right: 0; border-bottom: 1px solid var(--line); }

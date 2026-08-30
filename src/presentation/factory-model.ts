@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 
 export const FACTORY_MODEL_URL = '/models/factory.glb';
+export const DOCUMENT_MODEL_URL = '/models/document.glb';
+export const FACTORY_DISPLAY_SIZE = 5.35;
+export const DOCUMENT_DISPLAY_SIZE = 0.9;
+export const FACTORY_CAMERA_PADDING = 1.06;
 
 export interface FittedFactoryModel {
   height: number;
@@ -52,6 +56,51 @@ export function prepareFactoryModel(model: THREE.Object3D) {
     object.receiveShadow = true;
     object.frustumCulled = true;
   });
+  return model;
+}
+
+export function createTransportModel(
+  source: THREE.Object3D,
+  name: string,
+  accent: THREE.ColorRepresentation,
+  targetSize = DOCUMENT_DISPLAY_SIZE,
+) {
+  const model = source.clone(true);
+  model.name = name;
+  const accentColor = new THREE.Color(accent);
+
+  model.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
+    const materials = sourceMaterials.map((sourceMaterial) => {
+      const material = sourceMaterial.clone();
+      material.transparent = true;
+      material.opacity = 0;
+      material.depthWrite = true;
+      if (material instanceof THREE.MeshStandardMaterial) {
+        material.emissive.copy(accentColor);
+        material.emissiveIntensity = 0.14;
+      }
+      return material;
+    });
+    object.material = Array.isArray(object.material) ? materials : materials[0];
+    object.castShadow = true;
+    object.receiveShadow = true;
+    object.frustumCulled = true;
+  });
+
+  model.updateMatrixWorld(true);
+  const initialBounds = new THREE.Box3().setFromObject(model);
+  const initialSize = initialBounds.getSize(new THREE.Vector3());
+  const initialMaxDimension = Math.max(initialSize.x, initialSize.y, initialSize.z);
+  if (Number.isFinite(initialMaxDimension) && initialMaxDimension > 0) {
+    model.scale.multiplyScalar(targetSize / initialMaxDimension);
+    model.updateMatrixWorld(true);
+    const center = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3());
+    model.position.sub(center);
+    model.updateMatrixWorld(true);
+  }
+
   return model;
 }
 

@@ -3,37 +3,51 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { FoundryWorkspace } from '../domain/types';
 import type { AutonomousResearchProgress } from '../research/autonomous-research';
 import { getFactoryProductionView, type FactoryProductionView } from '../presentation/factory-production';
-import { FACTORY_MODEL_URL, fitFactoryModel, getFactoryCameraFrame, prepareFactoryModel } from '../presentation/factory-model';
+import {
+  DOCUMENT_MODEL_URL,
+  FACTORY_CAMERA_PADDING,
+  FACTORY_DISPLAY_SIZE,
+  FACTORY_MODEL_URL,
+  createTransportModel,
+  fitFactoryModel,
+  getFactoryCameraFrame,
+  prepareFactoryModel,
+} from '../presentation/factory-model';
 
 const INPUT_COLOR = new THREE.Color(0x63d1d2);
 const ERROR_COLOR = new THREE.Color(0xec6a62);
 const REPLAY_DURATION_MS = 10_000;
 const REPLAY_DURATION_SECONDS = REPLAY_DURATION_MS / 1_000;
 
-function createPixelParcel(color: number, accent: number) {
-  const parcel = new THREE.Group();
-  const bodyMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
-  const accentMaterial = new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.34, 0.42), bodyMaterial);
-  const cap = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.48), accentMaterial);
-  cap.position.y = 0.22;
-  const seal = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.46), accentMaterial);
-  parcel.add(body, cap, seal);
-  parcel.userData.materials = [bodyMaterial, accentMaterial];
-  return parcel;
+function transportMaterials(model: THREE.Object3D) {
+  const materials: THREE.Material[] = [];
+  model.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    materials.push(...(Array.isArray(object.material) ? object.material : [object.material]));
+  });
+  return materials;
 }
 
-function parcelMaterials(parcel: THREE.Group) {
-  return parcel.userData.materials as THREE.MeshBasicMaterial[];
+function setTransportOpacity(model: THREE.Object3D | undefined, opacity: number) {
+  if (!model) return;
+  for (const material of transportMaterials(model)) {
+    material.opacity = opacity;
+    material.depthWrite = opacity > 0.22;
+  }
+  model.visible = opacity > 0.01;
 }
 
-function setParcelOpacity(parcel: THREE.Group, opacity: number) {
-  for (const material of parcelMaterials(parcel)) material.opacity = opacity;
-  parcel.visible = opacity > 0.01;
+function setTransportAccent(model: THREE.Object3D | undefined, accent: THREE.Color) {
+  if (!model) return;
+  for (const material of transportMaterials(model)) {
+    if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+    material.emissive.copy(accent);
+  }
 }
 
 function addConveyor(
@@ -68,16 +82,22 @@ export function InteractiveFactory({
   const frameRef = useRef<HTMLDivElement>(null);
   const replayRequestRef = useRef(0);
   const resetViewRequestRef = useRef(0);
+  const motionPausedRef = useRef(false);
   const replayTimerRef = useRef<number | undefined>(undefined);
   const [webglFailed, setWebglFailed] = useState(false);
   const [modelStatus, setModelStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [replaying, setReplaying] = useState(false);
+  const [motionPaused, setMotionPaused] = useState(false);
   const production = getFactoryProductionView(workspace, researchRun);
   const productionRef = useRef<FactoryProductionView>(production);
 
   useEffect(() => {
     productionRef.current = production;
   }, [production]);
+
+  useEffect(() => {
+    motionPausedRef.current = motionPaused;
+  }, [motionPaused]);
 
   useEffect(() => () => {
     if (replayTimerRef.current !== undefined) window.clearTimeout(replayTimerRef.current);
@@ -192,23 +212,21 @@ export function InteractiveFactory({
 
     const conveyorMaterial = new THREE.MeshBasicMaterial({ color: 0x252a3b, transparent: true, opacity: 0.82 });
     const conveyorTieMaterial = new THREE.MeshBasicMaterial({ color: 0x5378ce, transparent: true, opacity: 0.58 });
-    const inputParcel = createPixelParcel(0x63d1d2, 0xfff1bf);
-    inputParcel.name = 'problem-packet';
-    const outputParcel = createPixelParcel(0xb8dc58, 0xec6a62);
-    outputParcel.name = 'solution-crate';
-    productionRig.add(inputParcel, outputParcel);
 
     let loadedModel: THREE.Object3D | undefined;
+    let inputDocument: THREE.Object3D | undefined;
+    let outputDocument: THREE.Object3D | undefined;
     let inputStartX = -3.2;
     let inputDockX = -1.15;
     let outputDockX = 1.15;
     let outputEndX = 3.2;
     let parcelY = 0.28;
     let flowZ = 0.25;
+    let processingRingBaseScale = 1;
     const cameraDirection = new THREE.Vector3();
     const frameLoadedModel = () => {
       if (!loadedModel) return;
-      const frameSettings = getFactoryCameraFrame(loadedModel, camera.fov, camera.aspect, 1.42);
+      const frameSettings = getFactoryCameraFrame(loadedModel, camera.fov, camera.aspect, FACTORY_CAMERA_PADDING);
       cameraDirection.copy(camera.position).sub(controls.target);
       if (cameraDirection.lengthSq() < 0.001) cameraDirection.set(0.55, 0.36, 0.76);
       cameraDirection.normalize();
@@ -229,50 +247,67 @@ export function InteractiveFactory({
     let seenResetRequest = resetViewRequestRef.current;
     let previousStatus = productionRef.current.status;
     let userInteracting = false;
+    let pointerX = 0;
+    let pointerY = 0;
     const markInteractionStart = () => { userInteracting = true; };
     const markInteractionEnd = () => { userInteracting = false; };
+    const trackPointer = (event: PointerEvent) => {
+      const bounds = canvas.getBoundingClientRect();
+      pointerX = THREE.MathUtils.clamp(((event.clientX - bounds.left) / Math.max(bounds.width, 1)) * 2 - 1, -1, 1);
+      pointerY = THREE.MathUtils.clamp(((event.clientY - bounds.top) / Math.max(bounds.height, 1)) * 2 - 1, -1, 1);
+    };
+    const clearPointer = () => {
+      pointerX = 0;
+      pointerY = 0;
+    };
     controls.addEventListener('start', markInteractionStart);
     controls.addEventListener('end', markInteractionEnd);
+    canvas.addEventListener('pointermove', trackPointer);
+    canvas.addEventListener('pointerleave', clearPointer);
 
     queueMicrotask(() => { if (!cancelled) setModelStatus('loading'); });
     const loader = new GLTFLoader();
-    loader.load(
-      FACTORY_MODEL_URL,
-      (gltf) => {
-        if (cancelled) {
-          gltf.scene.traverse((object) => {
-            if (!(object instanceof THREE.Mesh)) return;
-            object.geometry.dispose();
-            const materials = Array.isArray(object.material) ? object.material : [object.material];
-            materials.forEach((item) => item.dispose());
-          });
-          return;
-        }
-        const model = prepareFactoryModel(gltf.scene);
-        fitFactoryModel(model, 4.3);
-        modelAnchor.add(model);
-        loadedModel = model;
+    loader.setMeshoptDecoder(MeshoptDecoder);
+    Promise.all([
+      loader.loadAsync(FACTORY_MODEL_URL),
+      loader.loadAsync(DOCUMENT_MODEL_URL),
+    ]).then(([factoryGltf, documentGltf]) => {
+      if (cancelled) return;
 
-        const bounds = new THREE.Box3().setFromObject(model);
-        const size = bounds.getSize(new THREE.Vector3());
-        inputStartX = bounds.min.x - 0.82;
-        inputDockX = bounds.min.x + Math.min(0.28, size.x * 0.1);
-        outputDockX = bounds.max.x - Math.min(0.28, size.x * 0.1);
-        outputEndX = bounds.max.x + 0.82;
-        parcelY = bounds.min.y + 0.25;
-        flowZ = bounds.getCenter(new THREE.Vector3()).z;
-        inputParcel.position.set(inputStartX, parcelY, flowZ);
-        outputParcel.position.set(outputDockX, parcelY, flowZ);
-        addConveyor(productionRig, inputStartX - 0.08, inputDockX, parcelY - 0.2, flowZ, conveyorMaterial, conveyorTieMaterial);
-        addConveyor(productionRig, outputDockX, outputEndX + 0.08, parcelY - 0.2, flowZ, conveyorMaterial, conveyorTieMaterial);
+      const model = prepareFactoryModel(factoryGltf.scene);
+      fitFactoryModel(model, FACTORY_DISPLAY_SIZE);
+      modelAnchor.add(model);
+      loadedModel = model;
 
-        frameLoadedModel();
-        replayOnReady = productionRef.current.status === 'complete';
-        setModelStatus('ready');
-      },
-      undefined,
-      () => { if (!cancelled) setModelStatus('failed'); },
-    );
+      inputDocument = createTransportModel(documentGltf.scene, 'problem-document', INPUT_COLOR);
+      outputDocument = createTransportModel(documentGltf.scene, 'solution-document', 0xb8dc58);
+      inputDocument.rotation.set(-0.12, Math.PI / 2, 0.08);
+      outputDocument.rotation.set(-0.12, Math.PI / 2, -0.08);
+      inputDocument.userData.baseRotationY = inputDocument.rotation.y;
+      outputDocument.userData.baseRotationY = outputDocument.rotation.y;
+      productionRig.add(inputDocument, outputDocument);
+
+      const bounds = new THREE.Box3().setFromObject(model);
+      const size = bounds.getSize(new THREE.Vector3());
+      const horizontalSize = Math.max(size.x, size.z);
+      inputStartX = bounds.min.x - 0.72;
+      inputDockX = bounds.min.x + Math.min(0.32, size.x * 0.1);
+      outputDockX = bounds.max.x - Math.min(0.32, size.x * 0.1);
+      outputEndX = bounds.max.x + 0.72;
+      parcelY = bounds.min.y + 0.36;
+      flowZ = bounds.getCenter(new THREE.Vector3()).z;
+      processingRingBaseScale = Math.max(horizontalSize / 3.6, 1);
+      inputDocument.position.set(inputStartX, parcelY, flowZ);
+      outputDocument.position.set(outputDockX, parcelY, flowZ);
+      addConveyor(productionRig, inputStartX - 0.08, inputDockX, parcelY - 0.22, flowZ, conveyorMaterial, conveyorTieMaterial);
+      addConveyor(productionRig, outputDockX, outputEndX + 0.08, parcelY - 0.22, flowZ, conveyorMaterial, conveyorTieMaterial);
+
+      frameLoadedModel();
+      replayOnReady = productionRef.current.status === 'complete';
+      setModelStatus('ready');
+    }).catch(() => {
+      if (!cancelled) setModelStatus('failed');
+    });
 
     let visible = true;
     const intersectionObserver = typeof IntersectionObserver === 'undefined' ? undefined : new IntersectionObserver(([entry]) => {
@@ -324,37 +359,56 @@ export function InteractiveFactory({
       if (!replayActive && replayProgress >= 1) replayStartedAt = -1;
       const flowProgress = replayActive ? replayProgress : normalizedProgress;
       const processing = (replayActive || running) && flowProgress >= 0.32 && flowProgress < 0.74;
+      const ambientMotion = !reducedMotion && !motionPausedRef.current;
 
-      controls.autoRotate = !reducedMotion && !running && !replayActive && !userInteracting;
-      if (!reducedMotion) {
-        const factoryPulse = processing ? Math.sin(elapsed * 1.45) : Math.sin(elapsed * 0.46);
-        modelAnchor.position.y = processing ? factoryPulse * 0.045 : factoryPulse * 0.018;
-        const modelScale = processing ? 1 + (factoryPulse + 1) * 0.009 : 1;
+      controls.autoRotate = ambientMotion && !running && !replayActive && !userInteracting;
+      const tiltX = ambientMotion && !userInteracting ? pointerY * 0.028 : 0;
+      const tiltY = ambientMotion && !userInteracting ? pointerX * 0.055 : 0;
+      stage.rotation.x = THREE.MathUtils.lerp(stage.rotation.x, tiltX, 0.045);
+      stage.rotation.y = THREE.MathUtils.lerp(stage.rotation.y, tiltY, 0.045);
+      if (ambientMotion) {
+        const factoryPulse = processing ? Math.sin(elapsed * 0.92) : Math.sin(elapsed * 0.38);
+        modelAnchor.position.y = processing ? factoryPulse * 0.075 : factoryPulse * 0.022;
+        modelAnchor.rotation.z = processing ? factoryPulse * 0.009 : 0;
+        const modelScale = processing ? 1 + (factoryPulse + 1) * 0.013 : 1;
         modelAnchor.scale.setScalar(modelScale);
+      } else {
+        modelAnchor.position.y = 0;
+        modelAnchor.rotation.z = 0;
+        modelAnchor.scale.setScalar(1);
       }
 
-      const processPulse = reducedMotion ? 0 : (Math.sin(elapsed * 1.45) + 1) / 2;
+      const processPulse = ambientMotion ? (Math.sin(elapsed * 0.92) + 1) / 2 : 0.5;
       processingRingMaterial.opacity = processing ? 0.24 + processPulse * 0.28 : 0;
-      processingRing.scale.setScalar(processing ? 0.92 + processPulse * 0.22 : 0.92);
+      processingRing.scale.setScalar(processingRingBaseScale * (processing ? 0.92 + processPulse * 0.22 : 0.92));
       shadowMaterial.opacity = processing ? 0.62 + processPulse * 0.12 : 0.5;
 
       if (current.status === 'empty') {
-        inputParcel.position.x = inputStartX;
-        inputParcel.rotation.y = elapsed * 0.25;
-        parcelMaterials(inputParcel)[0].color.copy(INPUT_COLOR);
-        setParcelOpacity(inputParcel, 0.52 + (reducedMotion ? 0 : Math.sin(elapsed * 2) * 0.12));
+        if (inputDocument) {
+          inputDocument.position.x = inputStartX;
+          inputDocument.position.y = parcelY + (ambientMotion ? Math.sin(elapsed * 0.82) * 0.055 : 0);
+          inputDocument.rotation.y = inputDocument.userData.baseRotationY + (ambientMotion ? Math.sin(elapsed * 0.42) * 0.18 : 0);
+        }
+        setTransportAccent(inputDocument, INPUT_COLOR);
+        setTransportOpacity(inputDocument, 0.84);
       } else if (running || replayActive) {
         const intakeProgress = THREE.MathUtils.smoothstep(flowProgress, 0.02, 0.32);
-        inputParcel.position.x = THREE.MathUtils.lerp(inputStartX, inputDockX, intakeProgress);
-        inputParcel.rotation.y = reducedMotion ? 0 : elapsed * 0.24;
-        parcelMaterials(inputParcel)[0].color.copy(INPUT_COLOR);
-        setParcelOpacity(inputParcel, flowProgress < 0.38 ? THREE.MathUtils.clamp((0.38 - flowProgress) / 0.08, 0, 1) : 0);
+        if (inputDocument) {
+          inputDocument.position.x = THREE.MathUtils.lerp(inputStartX, inputDockX, intakeProgress);
+          inputDocument.position.y = parcelY + (ambientMotion ? Math.sin(elapsed * 1.15) * 0.035 : 0);
+          inputDocument.rotation.y = inputDocument.userData.baseRotationY + (ambientMotion ? intakeProgress * Math.PI * 0.22 : 0);
+        }
+        setTransportAccent(inputDocument, INPUT_COLOR);
+        setTransportOpacity(inputDocument, flowProgress < 0.38 ? THREE.MathUtils.clamp((0.38 - flowProgress) / 0.08, 0, 1) : 0);
       } else if (current.status === 'error') {
-        inputParcel.position.x = inputStartX;
-        parcelMaterials(inputParcel)[0].color.copy(ERROR_COLOR);
-        setParcelOpacity(inputParcel, 0.86);
+        if (inputDocument) {
+          inputDocument.position.x = inputStartX;
+          inputDocument.position.y = parcelY;
+        }
+        setTransportAccent(inputDocument, ERROR_COLOR);
+        setTransportOpacity(inputDocument, 0.9);
       } else {
-        setParcelOpacity(inputParcel, 0);
+        setTransportOpacity(inputDocument, 0);
       }
 
       const outputProgress = replayActive
@@ -362,12 +416,15 @@ export function InteractiveFactory({
         : current.status === 'complete'
           ? 1
           : THREE.MathUtils.smoothstep(normalizedProgress, 0.74, 0.98);
-      outputParcel.position.x = THREE.MathUtils.lerp(outputDockX, outputEndX, outputProgress);
-      outputParcel.rotation.y = reducedMotion ? 0 : -elapsed * 0.2;
+      if (outputDocument) {
+        outputDocument.position.x = THREE.MathUtils.lerp(outputDockX, outputEndX, outputProgress);
+        outputDocument.position.y = parcelY + outputProgress * 0.1 + (ambientMotion ? Math.sin(elapsed * 0.74) * 0.045 : 0);
+        outputDocument.rotation.y = outputDocument.userData.baseRotationY - (ambientMotion ? outputProgress * Math.PI * 0.28 : 0);
+      }
       const outputVisible = replayActive
         ? flowProgress > 0.7
         : current.status === 'complete' || (running && normalizedProgress > 0.7);
-      setParcelOpacity(outputParcel, outputVisible ? Math.max(outputProgress, 0.16) : 0);
+      setTransportOpacity(outputDocument, outputVisible ? Math.max(outputProgress, 0.16) : 0);
 
       rimLight.intensity = processing ? 31 + processPulse * 9 : 21;
       warmLight.intensity = processing ? 18 + processPulse * 7 : current.status === 'complete' ? 19 : current.status === 'error' ? 24 : 13;
@@ -383,6 +440,8 @@ export function InteractiveFactory({
       intersectionObserver?.disconnect();
       controls.removeEventListener('start', markInteractionStart);
       controls.removeEventListener('end', markInteractionEnd);
+      canvas.removeEventListener('pointermove', trackPointer);
+      canvas.removeEventListener('pointerleave', clearPointer);
       controls.dispose();
       scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
@@ -429,6 +488,25 @@ export function InteractiveFactory({
           >
             Reset view
           </button>
+          <button
+            type="button"
+            onClick={() => setMotionPaused((paused) => !paused)}
+            disabled={webglFailed || modelStatus !== 'ready'}
+            aria-pressed={motionPaused}
+          >
+            {motionPaused ? 'Resume motion' : 'Pause motion'}
+          </button>
+        </div>
+        <div className="factory-asset-credit">
+          <a
+            href="https://sketchfab.com/3d-models/diplomascroll3dmodeldoerlorenz-416cd723010c4a09ab971ec0225636b4"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Document model credit"
+          >
+            Document model · doerdoerlorenz
+          </a>
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>
         </div>
         <div className="factory-orbit-hint" aria-hidden="true">Drag to orbit · scroll to zoom</div>
       </div>
