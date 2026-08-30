@@ -497,17 +497,6 @@ export function InteractiveFactory({
             {motionPaused ? 'Resume motion' : 'Pause motion'}
           </button>
         </div>
-        <div className="factory-asset-credit">
-          <a
-            href="https://sketchfab.com/3d-models/diplomascroll3dmodeldoerlorenz-416cd723010c4a09ab971ec0225636b4"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Document model credit"
-          >
-            Document model · doerdoerlorenz
-          </a>
-          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>
-        </div>
         <div className="factory-orbit-hint" aria-hidden="true">Drag to orbit · scroll to zoom</div>
       </div>
 

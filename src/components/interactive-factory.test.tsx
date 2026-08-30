@@ -40,7 +40,7 @@ describe('InteractiveFactory', () => {
     expect(console).toHaveTextContent(/82%/i);
   });
 
-  it('offers restrained motion controls and credits the supplied document asset', async () => {
+  it('offers restrained motion controls without an attribution overlay', async () => {
     const workspace = createInitialWorkspace();
     workspace.problemBrief.problemStatement = 'Restaurant managers cannot deliver consistent first-week training.';
     const { container } = render(<InteractiveFactory
@@ -52,10 +52,8 @@ describe('InteractiveFactory', () => {
     expect(screen.getByRole('button', { name: /replay flow/i })).toBeVisible();
     expect(screen.getByRole('button', { name: /pause motion/i })).toBeVisible();
     expect(screen.getByRole('button', { name: /reset view/i })).toBeVisible();
-    expect(screen.getByRole('link', { name: /document model credit/i })).toHaveAttribute(
-      'href',
-      'https://sketchfab.com/3d-models/diplomascroll3dmodeldoerlorenz-416cd723010c4a09ab971ec0225636b4',
-    );
+    expect(screen.queryByRole('link', { name: /document model credit/i })).toBeNull();
+    expect(screen.queryByText(/doerdoerlorenz|cc by 4\.0/i)).toBeNull();
     expect(container.querySelector('.factory-port')).toBeNull();
   });
 });
