@@ -18,13 +18,13 @@ describe('SubscriptionDemo', () => {
     render(<SubscriptionDemo open onClose={vi.fn()} subscription={explorer} onApply={onApply} />);
 
     expect(screen.getByRole('dialog', { name: /set your research capacity/i })).toBeVisible();
-    expect(screen.getByText(/usage meter and limits work now/i)).toBeVisible();
+    expect(screen.getByText(/usage limits work.*payments are not connected/i)).toBeVisible();
     expect(screen.getByRole('radio', { name: /explorer/i })).toHaveAttribute('aria-checked', 'true');
 
     await user.click(screen.getByRole('radio', { name: /builder/i }));
     expect(screen.getByText('$24', { selector: '.subscription-live-quote > strong' })).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: /apply builder rules/i }));
+    await user.click(screen.getByRole('button', { name: /use builder/i }));
 
     expect(onApply).toHaveBeenCalledWith({ planId: 'builder', monthlyRuns: 40, seats: 1, monthlyPrice: 24 });
   });
@@ -39,7 +39,7 @@ describe('SubscriptionDemo', () => {
     fireEvent.change(screen.getByRole('slider', { name: /workspace seats/i }), { target: { value: '8' } });
 
     expect(screen.getByText('$127', { selector: '.subscription-live-quote > strong' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: /apply studio rules/i }));
+    await user.click(screen.getByRole('button', { name: /use studio/i }));
     expect(onApply).toHaveBeenCalledWith({ planId: 'studio', monthlyRuns: 300, seats: 8, monthlyPrice: 127 });
   });
 });

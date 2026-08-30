@@ -42,37 +42,37 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport, resear
     : concise(blueprint.assumptions[0]?.statement || 'Validate the core adoption assumption before scaling.', 118);
 
   return (
-    <section className="blueprint-view decision-report" aria-label="Proof-Carrying Idea Blueprint">
-      <section className="decision-passport" aria-labelledby="decision-title">
-        <div className="decision-passport-topline">
-          <span>Decision passport / blueprint v{blueprint.version}</span>
-          <strong>15-second read</strong>
+    <section className="blueprint-view decision-report" aria-label="Solution report">
+      <section className="solution-summary" aria-labelledby="decision-title">
+        <div className="solution-summary-topline">
+          <span>Solution summary / version {blueprint.version}</span>
+          <strong>Quick summary</strong>
         </div>
-        <header className="decision-passport-hero">
+        <header className="solution-summary-hero">
           <div>
             <span className="decision-eyebrow">Recommended solution</span>
             <h1 id="decision-title">{blueprint.name}</h1>
             <p>{concise(blueprint.proposition, 178)}</p>
           </div>
-          <div className="report-verdict"><span>VERDICT</span><strong>Test this</strong><small>Evidence-backed, not guaranteed</small></div>
+          <div className="report-verdict"><span>RECOMMENDATION</span><strong>Test this</strong><small>Supported by research. Test before scaling.</small></div>
         </header>
 
-        <div className="decision-passport-grid" aria-label="Critical decision summary">
+        <div className="solution-summary-grid" aria-label="Solution summary">
           <article><span>HOW IT WORKS</span><strong>{concise(blueprint.mechanism, 112)}</strong></article>
-          <article><span>STRONGEST SIGNAL</span><strong>{proofs[0] ? takeaway(proofs[0], 112) : `${studyCount} sources support the direction.`}</strong></article>
-          <article data-risk="true"><span>BIGGEST RISK</span><strong>{mainRisk}</strong></article>
-          <article><span>NEXT TEST</span><strong>{concise(blueprint.validationPlan.successMetric, 112)}</strong></article>
+          <article><span>KEY FINDING</span><strong>{proofs[0] ? takeaway(proofs[0], 112) : `${studyCount} sources support the direction.`}</strong></article>
+          <article data-risk="true"><span>MAIN RISK</span><strong>{mainRisk}</strong></article>
+          <article><span>FIRST TEST</span><strong>{concise(blueprint.validationPlan.successMetric, 112)}</strong></article>
         </div>
 
-        <footer className="decision-passport-actions">
-          <div className="decision-webmcp-proof"><span>WEBMCP PROOF LAYER</span><strong>Problem → typed tools → cited decision</strong><small>{studyCount} sources · {proofs.length} support signals · {counters.length} cautions</small></div>
-          <div><a href="#full-report">Open full report <span aria-hidden="true">↓</span></a><button type="button" onClick={() => onTrace(candidate.id, 'features.0')}>Trace one claim ↗</button></div>
+        <footer className="solution-summary-actions">
+          <div className="solution-webmcp-activity"><span>WEBMCP ACTIVITY</span><strong>Agent tool call → page update</strong><small>{studyCount} sources · {proofs.length} supporting findings · {counters.length} cautions</small></div>
+          <div><a href="#full-report">View full report <span aria-hidden="true">↓</span></a><button type="button" onClick={() => onTrace(candidate.id, 'features.0')}>View source path ↗</button></div>
         </footer>
       </section>
 
       <section className="report-document" id="full-report" aria-labelledby="full-report-title">
         <header className="report-document-header">
-          <div><span>LaunchPad research report</span><h2 id="full-report-title">The complete case</h2></div>
+          <div><span>LaunchPad research report</span><h2 id="full-report-title">Full report</h2></div>
           <dl>
             <div><dt>Status</dt><dd>Ready to test</dd></div>
             <div><dt>Sources</dt><dd>{studyCount}</dd></div>
@@ -82,7 +82,7 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport, resear
 
         <div className="report-document-layout">
           <aside className="report-document-sidebar" aria-label="Full report sections">
-            <span>REPORT INDEX</span>
+            <span>SECTIONS</span>
             <nav>
               <a href="#recommendation"><b>01</b> Recommendation</a>
               <a href="#evidence-summary"><b>02</b> Evidence</a>
@@ -90,7 +90,7 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport, resear
               <a href="#next-test"><b>04</b> Next test</a>
               <a href="#research-ledger"><b>05</b> Sources</a>
             </nav>
-            <div><span>WEBMCP RECORD</span><strong>Traceable</strong><small>Every report layer comes from the same live workspace.</small></div>
+            <div><span>WEBMCP ACTIVITY</span><strong>Saved</strong><small>Agent calls and page changes use this workspace.</small></div>
           </aside>
 
           <div className="report-document-body">
@@ -106,14 +106,14 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport, resear
                   <li key={feature.id}>
                     <span>{String(index + 1).padStart(2, '0')}</span>
                     <div><strong>{feature.name}</strong><p>{feature.description}</p></div>
-                    <button type="button" onClick={() => onTrace(candidate.id, `features.${index}`)} aria-label={`Why ${feature.name} exists`}>Trace proof ↗</button>
+                    <button type="button" onClick={() => onTrace(candidate.id, `features.${index}`)} aria-label={`View sources for ${feature.name}`}>View sources ↗</button>
                   </li>
                 ))}
               </ol>
             </section>
 
             <section className="report-section" id="evidence-summary">
-              <div className="report-section-heading"><span>02</span><div><small>EVIDENCE</small><h3>Why it is plausible</h3></div></div>
+              <div className="report-section-heading"><span>02</span><div><small>RESEARCH</small><h3>What the research says</h3></div></div>
               <div className="evidence-readout" aria-label="Evidence summary">
                 <div><strong>{studyCount}</strong><span>research sources</span></div>
                 <div><strong>{proofs.length}</strong><span>support signals</span></div>
@@ -127,7 +127,7 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport, resear
                   </article>
                 ))}
               </div>
-              <a className="report-source-link" href="#research-ledger">Review all {visibleFindings.length} source records ↓</a>
+              <a className="report-source-link" href="#research-ledger">View all {visibleFindings.length} source records ↓</a>
             </section>
 
             <section className="report-section" id="risks">
@@ -149,9 +149,9 @@ export function BlueprintView({ workspace, traceNodes, onTrace, onExport, resear
               </dl>
             </section>
 
-            {traceNodes.length > 0 && <section className="trace-panel" aria-label="Evidence trace"><div className="trace-label">Why this decision exists</div>{traceNodes.map((node, index) => <div className="trace-node" data-kind={node.kind} key={node.id}><span>{node.kind.replace('_', ' ').toUpperCase()}</span><strong>{node.label}</strong><small>{node.detail}</small>{index < traceNodes.length - 1 && <i aria-hidden="true">↓</i>}</div>)}</section>}
+            {traceNodes.length > 0 && <section className="trace-panel" aria-label="Source path"><div className="trace-label">Source path</div>{traceNodes.map((node, index) => <div className="trace-node" data-kind={node.kind} key={node.id}><span>{node.kind.replace('_', ' ').toUpperCase()}</span><strong>{node.label}</strong><small>{node.detail}</small>{index < traceNodes.length - 1 && <i aria-hidden="true">↓</i>}</div>)}</section>}
             {researchAppendix}
-            <footer className="blueprint-actions"><span>Keep the complete record</span><button type="button" onClick={() => onExport('markdown')}>Export report .md</button><button type="button" onClick={() => onExport('json')}>Export data .json</button></footer>
+            <footer className="blueprint-actions"><span>Download report</span><button type="button" onClick={() => onExport('markdown')}>Report .md</button><button type="button" onClick={() => onExport('json')}>Data .json</button></footer>
           </div>
         </div>
       </section>

@@ -65,7 +65,7 @@ export function getFactoryProductionView(
       inputLabel: workspace.problemBrief.problemStatement ? 'Problem held' : 'Input open',
       inputDetail: problem,
       outputLabel: 'Output empty',
-      outputDetail: 'Solution + proof exits here',
+      outputDetail: 'The finished solution appears here',
     };
   }
 
@@ -90,7 +90,7 @@ export function getFactoryProductionView(
       status: 'complete',
       progress: 100,
       activeIndex: index,
-      activeLabel: 'Blueprint shipped',
+      activeLabel: 'Solution ready',
       activeStation: 'Output bay',
       inputLabel: 'Problem processed',
       inputDetail: problem,

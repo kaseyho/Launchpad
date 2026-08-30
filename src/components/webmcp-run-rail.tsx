@@ -8,9 +8,23 @@ import { getLatestAgentEvent } from '../presentation/factory-stages';
 export function createAgentPrompt(workspace: FoundryWorkspace) {
   const problem = workspace.problemBrief.problemStatement.trim();
   return problem
-    ? `Call research_and_ideate once for this LaunchPad problem: “${problem}”. Then use the read-only WebMCP tools to inspect the final solution and its evidence lineage.`
-    : 'Wait for me to enter a problem in LaunchPad, then call research_and_ideate once and inspect the completed evidence-backed solution.';
+    ? `Call research_and_ideate once for this LaunchPad problem: “${problem}”. Then use the read-only WebMCP tools to inspect the solution and its sources.`
+    : 'Wait for me to enter a problem in LaunchPad, then call research_and_ideate once and inspect the finished solution and sources.';
 }
+
+type LiveNodeState = 'idle' | 'active' | 'complete' | 'error';
+
+const phaseLabels: Record<AutonomousResearchProgress['phase'], string> = {
+  idle: 'Waiting',
+  planning: 'Plan research',
+  searching: 'Search sources',
+  extracting: 'Read studies',
+  synthesizing: 'Group findings',
+  ideating: 'Build solution',
+  stress_testing: 'Check risks',
+  complete: 'Solution ready',
+  error: 'Run stopped',
+};
 
 export function WebMCPRunRail({
   workspace,
@@ -25,64 +39,78 @@ export function WebMCPRunRail({
 }) {
   const latestAgentEvent = getLatestAgentEvent(workspace);
   const [expanded, setExpanded] = useState(false);
-  const hasProblem = Boolean(workspace.problemBrief.problemStatement.trim());
   const currentTool = latestAgentEvent?.toolName ?? 'research_and_ideate';
+  const isAgentRun = researchRun.actor === 'agent';
+  const agentSeen = isAgentRun || Boolean(latestAgentEvent);
+  const runActive = isAgentRun && !['idle', 'complete', 'error'].includes(researchRun.phase);
+  const runFailed = isAgentRun && researchRun.phase === 'error';
+  const pageUpdated = agentSeen && workspace.stage === 'FINALIZED';
+  const agentState: LiveNodeState = agentSeen ? 'complete' : 'idle';
+  const toolState: LiveNodeState = runFailed ? 'error' : runActive ? 'active' : agentSeen ? 'complete' : 'idle';
+  const pageState: LiveNodeState = runFailed ? 'error' : runActive ? 'active' : pageUpdated ? 'complete' : 'idle';
+  const toolStatus = toolState === 'active' ? 'Running' : toolState === 'complete' ? 'Complete' : toolState === 'error' ? 'Stopped' : 'Waiting';
+  const pageStatus = pageState === 'active' ? 'Updating' : pageState === 'complete' ? 'Updated' : pageState === 'error' ? 'Stopped' : 'Ready';
+  const liveStatus = runActive
+    ? `${phaseLabels[researchRun.phase]} · ${researchRun.progress}%`
+    : pageUpdated
+      ? 'The agent updated the solution on this page.'
+      : latestAgentEvent
+        ? `Last agent call: ${latestAgentEvent.toolName}`
+        : ready
+          ? 'Waiting for a browser agent to call a tool.'
+          : 'WebMCP not detected here. Manual research still works.';
 
   return (
     <aside className="webmcp-dock" aria-label="WebMCP agent run" data-connected={ready}>
       <div className="webmcp-proof-header">
         <div className="webmcp-status" data-connected={ready}>
           <span aria-hidden="true" />
-          <div><small>WebMCP / browser agent bridge</small><strong>{ready ? `${toolCount} tools registered` : 'Manual demo mode'}</strong></div>
+          <div><small>WebMCP / live tool activity</small><strong>{ready ? `${toolCount} tools registered` : 'Not detected'}</strong></div>
         </div>
         <div className="webmcp-dock-actions">
           <button type="button" className="webmcp-explain" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
-            {expanded ? 'Hide protocol' : 'How WebMCP works'}
+            {expanded ? 'Hide WebMCP details' : 'Show WebMCP details'}
           </button>
         </div>
       </div>
 
-      <div className="webmcp-proof-message">
-        <span>Why WebMCP</span>
-        <h2>The agent calls LaunchPad. You watch the same page change.</h2>
-        <p>No screenshot guessing and no duplicate backend state. The agent invokes structured tools that reuse LaunchPad&apos;s live research workflow.</p>
-      </div>
-
-      <div className="webmcp-flow" aria-label="WebMCP browser tool flow">
-        <div><span>01 / Browser agent</span><strong>Your problem</strong></div>
-        <i aria-hidden="true">→</i>
-        <div><span>02 / Typed WebMCP tool</span><code>research_and_ideate()</code></div>
-        <i aria-hidden="true">→</i>
-        <div><span>03 / Same live page</span><strong>Factory + cited report</strong></div>
-      </div>
-
-      <div className="webmcp-latest" aria-live="polite">
-        <span>{latestAgentEvent ? 'Agent call' : ready ? 'Ready for agent' : 'Browser status'}</span>
-        <code>{currentTool}</code>
-        {latestAgentEvent ? (
-          <><strong>{latestAgentEvent.outputSummary}</strong><small>workspace v{latestAgentEvent.workspaceVersion}</small></>
-        ) : (
-          <strong>{ready
-            ? hasProblem ? researchRun.message : 'A browser agent can discover and call the registered tools now.'
-            : 'WebMCP API not detected here. The manual button runs the same page logic for the demo.'}</strong>
-        )}
-      </div>
+      <section className="webmcp-live-map" role="region" aria-label="Live WebMCP activity">
+        <div className="webmcp-map-status">
+          <span>Live WebMCP activity</span>
+          <strong aria-live="polite">{liveStatus}</strong>
+        </div>
+        <ol className="webmcp-node-path">
+          <li className="webmcp-node" data-state={agentState} aria-label={`Browser agent: ${agentSeen ? 'connected' : 'waiting'}`}>
+            <span aria-hidden="true">01</span><div><small>Browser agent</small><strong>{agentSeen ? 'Connected' : 'Waiting'}</strong></div>
+          </li>
+          <li className="webmcp-link" data-state={toolState} aria-hidden="true"><i /></li>
+          <li className="webmcp-node webmcp-tool-node" data-state={toolState} aria-label={`WebMCP tool: ${toolStatus.toLowerCase()}`}>
+            <span aria-hidden="true">02</span><div><small>WebMCP tool</small><code>{currentTool}</code></div>
+          </li>
+          <li className="webmcp-link" data-state={pageState} aria-hidden="true"><i /></li>
+          <li className="webmcp-node" data-state={pageState} aria-label={`LaunchPad page: ${pageStatus.toLowerCase()}`}>
+            <span aria-hidden="true">03</span><div><small>LaunchPad page</small><strong>{pageStatus}</strong></div>
+          </li>
+        </ol>
+        <div className="webmcp-map-readout">
+          <strong>{phaseLabels[researchRun.phase]}</strong>
+          <span>{toolCount} tools available</span>
+          <span>Page v{workspace.version}</span>
+        </div>
+      </section>
 
       {expanded && (
         <div className="webmcp-explanation">
           <ol className="webmcp-lifecycle" aria-label="Official WebMCP tool lifecycle">
             <li><span>01</span><strong>Registered</strong></li>
-            <li><span>02</span><strong>Discovered</strong></li>
-            <li><span>03</span><strong>Invoked</strong></li>
-            <li><span>04</span><strong>Page updated</strong></li>
-            <li><span>05</span><strong>Result returned</strong></li>
+            <li><span>02</span><strong>Called</strong></li>
+            <li><span>03</span><strong>Page updated</strong></li>
           </ol>
           <div className="webmcp-toolset">
-            <span>{toolCount} typed tools</span>
-            <strong>Run · source · inspect · verify · export</strong>
-            <p><b>Same page, same state.</b> Both the form and the agent tools call LaunchPad&apos;s shared service. Only activity marked as an agent call is WebMCP proof.</p>
+            <span>{toolCount} tools available</span>
+            <strong>Research · inspect · export</strong>
+            <p>Only calls marked as <b>Agent</b> count as WebMCP activity. Manual runs are kept separate.</p>
           </div>
-          <p className="webmcp-distinction"><strong>Human stays in control.</strong> The visible workspace, history, sources, and report remain available while the agent works.</p>
         </div>
       )}
     </aside>

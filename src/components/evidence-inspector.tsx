@@ -21,10 +21,10 @@ export function EvidenceInspector({ workspace, open, onClose, onReview }: Eviden
   const source = finding && workspace.sources.find((item) => item.id === finding.sourceId);
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-      <section className="foundry-dialog evidence-dialog" role="dialog" aria-modal="true" aria-label="Evidence inspector">
+      <section className="foundry-dialog evidence-dialog" role="dialog" aria-modal="true" aria-label="Source graph">
         <header className="dialog-header">
-          <div><span>STATION 03 / INSPECTION BAY</span><h2>EVIDENCE INSPECTOR</h2></div>
-          <button type="button" onClick={onClose} aria-label="Close evidence inspector">CLOSE ×</button>
+          <div><span>SOURCES</span><h2>Source graph</h2></div>
+          <button type="button" onClick={onClose} aria-label="Close source graph">Close ×</button>
         </header>
         <div className="inspector-layout">
           <nav className="finding-list" aria-label="Findings">
@@ -40,7 +40,7 @@ export function EvidenceInspector({ workspace, open, onClose, onReview }: Eviden
             <article className="finding-detail">
               <div className="finding-badges">
                 <span className={`evidence-kind kind-${finding.evidenceType}`}>{finding.evidenceType.replaceAll('_', ' ')}</span>
-                {finding.synthetic && <span className="synthetic-badge">SYNTHETIC DEMO DATA</span>}
+                {finding.synthetic && <span className="synthetic-badge">DEMO DATA</span>}
                 <span className={`review-badge status-${finding.reviewStatus}`}>{finding.reviewStatus.toUpperCase()}</span>
               </div>
               <h3>{finding.normalizedClaim}</h3>
@@ -48,23 +48,23 @@ export function EvidenceInspector({ workspace, open, onClose, onReview }: Eviden
                 <div className="finding-number"><strong>{finding.value}{finding.unit === 'percent' ? '%' : ''}</strong><span>of {finding.denominator}</span></div>
               )}
               <dl className="finding-context">
-                <div><dt>POPULATION</dt><dd>{finding.population}</dd></div>
-                <div><dt>TIMEFRAME</dt><dd>{finding.timeframe}</dd></div>
-                <div><dt>GEOGRAPHY</dt><dd>{finding.geography}</dd></div>
-                <div><dt>DIRECTNESS</dt><dd>{finding.quality.directness.toUpperCase()}</dd></div>
+                <div><dt>People</dt><dd>{finding.population}</dd></div>
+                <div><dt>Time</dt><dd>{finding.timeframe}</dd></div>
+                <div><dt>Place</dt><dd>{finding.geography}</dd></div>
+                <div><dt>Relevance</dt><dd>{finding.quality.directness}</dd></div>
               </dl>
               <div className="citation-panel">
-                <span>EXACT SOURCE PASSAGE</span>
+                <span>Source excerpt</span>
                 <blockquote>“{finding.citation.exactExcerpt}”</blockquote>
                 <a href={source.url.startsWith('http') ? source.url : undefined} target="_blank" rel="noreferrer" aria-disabled={!source.url.startsWith('http')}>
                   {source.title} · {finding.citation.pageOrSection} ↗
                 </a>
               </div>
-              <div className="caveat-panel"><span>CAVEATS</span>{finding.caveats.map((caveat) => <p key={caveat}>{caveat}</p>)}</div>
+              <div className="caveat-panel"><span>Limits</span>{finding.caveats.map((caveat) => <p key={caveat}>{caveat}</p>)}</div>
               <div className="review-actions">
-                <button type="button" onClick={() => onReview(finding.id, 'accept')}>ACCEPT FINDING</button>
-                <button type="button" onClick={() => onReview(finding.id, 'qualify')}>QUALIFY FINDING</button>
-                <button type="button" className="reject" onClick={() => onReview(finding.id, 'reject')}>REJECT FINDING</button>
+                <button type="button" onClick={() => onReview(finding.id, 'accept')}>Accept</button>
+                <button type="button" onClick={() => onReview(finding.id, 'qualify')}>Keep with limits</button>
+                <button type="button" className="reject" onClick={() => onReview(finding.id, 'reject')}>Reject</button>
               </div>
             </article>
           ) : <p className="dialog-empty">No extracted findings yet.</p>}

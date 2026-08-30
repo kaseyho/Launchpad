@@ -155,7 +155,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
         signal: abortController.signal,
         actor,
         onProgress: (progress) => {
-          setResearchRun(progress);
+          setResearchRun({ ...progress, actor });
           setNotice(progress.message);
         },
         pause: () => new Promise((resolve) => window.setTimeout(resolve, 140)),

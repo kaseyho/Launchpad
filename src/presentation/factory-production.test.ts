@@ -12,7 +12,7 @@ describe('factory production view', () => {
 
     expect(view.status).toBe('empty');
     expect(view.inputLabel).toBe('Input open');
-    expect(view.outputDetail).toMatch(/solution \+ proof exits here/i);
+    expect(view.outputDetail).toMatch(/finished solution appears here/i);
   });
 
   it('maps autonomous research phases onto visible factory stations', () => {

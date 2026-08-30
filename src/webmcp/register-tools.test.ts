@@ -92,7 +92,7 @@ describe('LaunchPad WebMCP registration', () => {
       desired_outcome: 'Improve activation',
     });
 
-    expect(result?.content[0]?.text).toContain('Problem brief updated');
+    expect(result?.content[0]?.text).toContain('Problem saved');
     expect(foundry.getWorkspace().stage).toBe('PROBLEM_DEFINED');
     expect(foundry.getWorkspace().activity.at(-1)?.actor).toBe('agent');
 

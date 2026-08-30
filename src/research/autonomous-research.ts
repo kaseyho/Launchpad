@@ -18,6 +18,7 @@ export interface AutonomousResearchProgress {
   phase: AutonomousResearchPhase;
   progress: number;
   message: string;
+  actor?: Actor;
   error?: string;
   errorCode?: 'usage_limit';
 }
@@ -50,13 +51,13 @@ function inferProblemContext(problem: string) {
       audience,
       desiredOutcome: 'Reduce preventable safety failures and improve readiness',
       proposal: {
-        name: 'Readiness Passport',
-        oneLiner: `A staged readiness system that helps ${audience.toLowerCase()} prove they can act safely before entering a higher-risk situation.`,
+        name: 'Readiness Check',
+        oneLiner: `A staged readiness system that helps ${audience.toLowerCase()} practise safely before entering a higher-risk situation.`,
         mechanism: 'Translate the strongest research mechanisms into short contextual practice, then require observable readiness before progression.',
         features: [
           { name: 'Risk-matched pathway', description: 'Turn the problem into short preparation steps matched to the user and situation.' },
           { name: 'Practice checkpoint', description: 'Use scenario-based practice at the moment research suggests it will transfer best.' },
-          { name: 'Readiness proof', description: 'Record an observable checkpoint before the user proceeds independently.' },
+          { name: 'Readiness check', description: 'Record an observable checkpoint before the user proceeds independently.' },
         ],
       },
     };
@@ -72,7 +73,7 @@ function inferProblemContext(problem: string) {
         features: [
           { name: 'Role map', description: 'Adapt the path to the user’s immediate job and current confidence.' },
           { name: 'Worked scenario', description: 'Show one concrete example before asking the user to perform the task.' },
-          { name: 'Proof checkpoint', description: 'Confirm the user can complete the task and surface where support is still needed.' },
+          { name: 'Task check', description: 'Confirm the user can complete the task and surface where support is still needed.' },
         ],
       },
     };
@@ -114,13 +115,13 @@ function inferProblemContext(problem: string) {
     audience,
     desiredOutcome: 'Produce a measurable improvement in the problem’s most important behavior',
     proposal: {
-      name: 'Evidence-Guided Pilot',
-      oneLiner: `A focused intervention for ${audience.toLowerCase()} that targets the strongest research-backed mechanism behind the problem.`,
-      mechanism: 'Translate converging research findings into one reversible intervention, preserve counter-evidence as constraints, and measure the affected behavior before scaling.',
+      name: 'Focused Pilot',
+      oneLiner: `A small test for ${audience.toLowerCase()} based on the strongest repeated finding in the research.`,
+      mechanism: 'Turn the strongest repeated finding into one reversible action. Keep conflicting findings as limits and measure the result before scaling.',
       features: [
-        { name: 'Evidence trigger', description: 'Focus the intervention on the strongest repeated signal in the research.' },
+        { name: 'Research focus', description: 'Focus the test on the strongest repeated finding in the research.' },
         { name: 'Contextual action', description: 'Deliver one concrete action at the moment it is most likely to matter.' },
-        { name: 'Decision measure', description: 'Predefine the result that means continue, revise, or stop.' },
+        { name: 'Success measure', description: 'Set the result that means continue, revise, or stop.' },
       ],
     },
   };
@@ -173,7 +174,7 @@ function enrichProposal(base: IdeaCandidateProposal, workspace: FoundryWorkspace
       'Start with a reversible pilot before scaling',
       'Verify the cited abstracts against the full papers before implementation',
     ],
-    differentiation: `The intervention is derived from converging findings across ${evidenceTitles.length} research threads, with limitations retained as design constraints.`,
+    differentiation: `The solution uses findings from ${evidenceTitles.length} research threads and keeps conflicting findings as limits.`,
     assumptions: [
       {
         statement: 'The research mechanisms transfer to the specific population and setting described in the problem.',
@@ -200,7 +201,7 @@ export async function runAutonomousResearch({
   };
   const context = inferProblemContext(problem);
 
-  await update('planning', 8, 'Turning your problem into focused research questions.');
+  await update('planning', 8, 'Setting up research questions.');
   requireResult(service.updateProblemBrief({
     problemStatement: problem,
     targetAudience: context.audience,
@@ -209,7 +210,7 @@ export async function runAutonomousResearch({
   }, actor));
   requireResult(service.planResearch({ focus: context.desiredOutcome }, 'system'));
 
-  await update('searching', 24, 'Searching peer-reviewed research and limitation-focused studies.');
+  await update('searching', 24, 'Searching research and studies about limits.');
   const batches = await Promise.allSettled(buildResearchQueries(problem).map(async ({ lane, query }) => {
     const response = await fetcher(`/api/search?q=${encodeURIComponent(query)}`, { signal });
     if (!response.ok) throw new Error('Academic search is temporarily unavailable.');
@@ -236,7 +237,7 @@ export async function runAutonomousResearch({
     }, 'system'));
   }
 
-  await update('extracting', 48, `Reading ${hits.length} relevant abstracts and extracting traceable findings.`);
+  await update('extracting', 48, `Reading ${hits.length} studies and saving key findings.`);
   const sourceIds = getWorkspace().sources.map((source) => source.id);
   const findings = requireResult<FoundryWorkspace['findings']>(service.extractFindings({ sourceIds }, 'system'));
   requireResult(service.reviewFindings({
@@ -245,19 +246,19 @@ export async function runAutonomousResearch({
     note: 'Automatically qualified from a citation-linked abstract. Verify the full paper before implementation.',
   }, 'system'));
 
-  await update('synthesizing', 68, 'Clustering mechanisms, repeated signals, and counter-evidence.');
+  await update('synthesizing', 68, 'Grouping findings and conflicts.');
   requireResult(service.synthesizeInsights({}, 'system'));
 
-  await update('ideating', 82, 'Building one solution from the strongest converging evidence.');
+  await update('ideating', 82, 'Building one solution from the strongest findings.');
   const proposal = enrichProposal(context.proposal, getWorkspace());
   const candidates = requireResult<FoundryWorkspace['candidates']>(service.generateIdeaCandidates({ proposals: [proposal] }, 'system'));
   const selected = candidates[0];
   if (!selected) throw new Error('LaunchPad could not assemble a supported solution from the available findings.');
 
-  await update('stress_testing', 92, 'Testing the solution against limitations and transfer risks.');
+  await update('stress_testing', 92, 'Checking the solution against limits and risks.');
   requireResult(service.stressTestCandidate({ candidateId: selected.id }, 'system'));
   const blueprint = requireResult(service.finalizeBlueprint({ candidateId: selected.id }, 'system'));
 
-  await update('complete', 100, 'Your evidence-backed solution is ready.');
+  await update('complete', 100, 'Solution ready.');
   return blueprint;
 }

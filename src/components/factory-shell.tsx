@@ -22,11 +22,11 @@ function stageTitle(stage: FoundryWorkspace['stage']) {
     RESEARCH_PLANNED: 'Research planned',
     SOURCING: 'Gathering sources',
     EVIDENCE_REVIEW: 'Reviewing evidence',
-    INSIGHTS_READY: 'Signals synthesized',
-    CANDIDATES_READY: 'Ideas ready to compare',
-    STRESS_TESTING: 'Testing the strongest idea',
-    BLUEPRINT_READY: 'Blueprint ready',
-    FINALIZED: 'Blueprint finalized',
+    INSIGHTS_READY: 'Findings grouped',
+    CANDIDATES_READY: 'Solution draft ready',
+    STRESS_TESTING: 'Checking risks',
+    BLUEPRINT_READY: 'Solution ready',
+    FINALIZED: 'Solution ready',
   };
   return labels[stage];
 }
@@ -117,10 +117,10 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
       </section>
 
       {workspace.blueprint && (
-        <section className="launch-result" id="launch-result" aria-label="Evidence-backed solution">
+        <section className="launch-result" id="launch-result" aria-label="Research solution">
           <div className="launch-result-topline">
-            <span>Output / evidence-backed solution</span>
-            <button type="button" onClick={() => setInspectorOpen(true)}>Inspect evidence graph ↗</button>
+            <span>Output / researched solution</span>
+            <button type="button" onClick={() => setInspectorOpen(true)}>View source graph ↗</button>
           </div>
           <BlueprintView
             workspace={workspace}

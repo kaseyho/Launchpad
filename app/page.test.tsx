@@ -9,11 +9,13 @@ describe('LaunchPad first product slice', () => {
     expect(screen.getByRole('banner')).toHaveTextContent('LaunchPad');
     expect(screen.getByRole('region', { name: /problem brief/i })).toBeVisible();
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toBeVisible();
-    expect(screen.getByRole('complementary', { name: /webmcp agent run/i })).toHaveTextContent(/factory \+ cited report/i);
+    expect(screen.getByRole('complementary', { name: /webmcp agent run/i })).toHaveTextContent(/browser agent/i);
+    expect(screen.getByRole('complementary', { name: /webmcp agent run/i })).toHaveTextContent(/webmcp tool/i);
+    expect(screen.getByRole('complementary', { name: /webmcp agent run/i })).toHaveTextContent(/launchpad page/i);
     expect(screen.getByRole('textbox', { name: /what problem should launchpad solve/i })).toBeVisible();
     expect(screen.getByRole('button', { name: /research this problem/i })).toBeEnabled();
-    expect(screen.getByText(/no api key or source hunting/i)).toBeVisible();
-    expect(screen.getByText(/webmcp \/ browser agent bridge/i)).toBeVisible();
+    expect(screen.getByText(/no api key or source search/i)).toBeVisible();
+    expect(screen.getByText(/webmcp \/ live tool activity/i)).toBeVisible();
     expect(screen.getByRole('button', { name: /activity/i })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('button', { name: /plans/i })).toHaveAttribute('aria-expanded', 'false');
   });

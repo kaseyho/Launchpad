@@ -100,16 +100,16 @@ export function SubscriptionDemo({
       >
         <header className="subscription-header">
           <div>
-            <span>Plans / live product controls</span>
+            <span>Plans</span>
             <h2 id="subscription-title">Set your research capacity</h2>
-            <p id="subscription-description">Choose how many complete problem-to-solution runs LaunchPad should provide each month. The selected allowance is enforced across human and WebMCP runs.</p>
+            <p id="subscription-description">Set how many research runs this workspace can use each month. Manual and WebMCP runs share the same limit.</p>
           </div>
           <button type="button" onClick={closeDrawer} aria-label="Close plans">Close</button>
         </header>
 
         <div className="subscription-demo-notice" role="note">
-          <strong>Evaluation billing</strong>
-          <span>The usage meter and limits work now. Payment collection is not connected, so no card is charged; this browser holds the evaluation account.</span>
+          <strong>Demo billing</strong>
+          <span>Usage limits work. Payments are not connected, so this demo will not charge you.</span>
         </div>
 
         <section className="subscription-usage" aria-label="Current research allowance">
@@ -122,7 +122,7 @@ export function SubscriptionDemo({
             <strong>{remaining} / {subscription.monthlyRuns}</strong>
           </div>
           <div>
-            <span>Monthly configuration</span>
+            <span>Monthly price</span>
             <strong>{priceLabel(subscription.monthlyPrice)} · {subscription.seats} {subscription.seats === 1 ? 'seat' : 'seats'}</strong>
           </div>
           <div>
@@ -142,10 +142,10 @@ export function SubscriptionDemo({
         <section className="subscription-section" aria-labelledby="plan-comparison-title">
           <div className="subscription-section-heading">
             <div>
-              <span>01 / choose operating mode</span>
-              <h3 id="plan-comparison-title">The run is the value unit</h3>
+              <span>01 / choose plan</span>
+              <h3 id="plan-comparison-title">Choose a plan</h3>
             </div>
-            <p>One run searches connected sources, extracts findings, synthesizes a solution, stress-tests it, and produces the cited report.</p>
+            <p>One run searches sources and returns one solution with citations.</p>
           </div>
 
           <div className="subscription-plans" role="radiogroup" aria-label="LaunchPad plans">
@@ -173,7 +173,7 @@ export function SubscriptionDemo({
                   </span>
                   <span className="subscription-plan-limit">{displayQuote.monthlyRuns} runs · {displayQuote.seats} {displayQuote.seats === 1 ? 'seat' : 'seats'}</span>
                   <span className="subscription-plan-features">{plan.features.join(' · ')}</span>
-                  {subscription.planId === plan.id && <em>Current product plan</em>}
+                  {subscription.planId === plan.id && <em>Current plan</em>}
                 </button>
               );
             })}
@@ -183,10 +183,10 @@ export function SubscriptionDemo({
         <section className="subscription-section subscription-configurator" aria-labelledby="capacity-title">
           <div className="subscription-section-heading">
             <div>
-              <span>02 / control the price</span>
-              <h3 id="capacity-title">Match capacity to real usage</h3>
+              <span>02 / set usage</span>
+              <h3 id="capacity-title">Set monthly runs</h3>
             </div>
-            <p>The quote is calculated from the cost-bearing product inputs. There are no hidden overages: research stops when the included allowance reaches zero.</p>
+            <p>Price changes with runs and seats. Research stops at the limit.</p>
           </div>
 
           <div className="subscription-control-grid">
@@ -226,7 +226,7 @@ export function SubscriptionDemo({
             </div>
 
             <div className="subscription-live-quote" aria-live="polite">
-              <span>Live monthly configuration</span>
+              <span>Monthly price</span>
               <strong>{priceLabel(selectedQuote.monthlyPrice)}<small>/ month</small></strong>
               <dl>
                 <div><dt>Plan</dt><dd>{selectedPlan.name}</dd></div>
@@ -236,7 +236,7 @@ export function SubscriptionDemo({
                 <div><dt>Overage</dt><dd>Blocked at limit · no surprise fee</dd></div>
               </dl>
               <button type="button" onClick={applySelectedPlan} disabled={isSelectedActive}>
-                {isSelectedActive ? 'Current product configuration' : `Apply ${selectedPlan.name} rules to LaunchPad — ${priceLabel(selectedQuote.monthlyPrice)}/mo`}
+                {isSelectedActive ? 'Current plan' : `Use ${selectedPlan.name} — ${priceLabel(selectedQuote.monthlyPrice)}/mo`}
               </button>
             </div>
           </div>
@@ -245,17 +245,17 @@ export function SubscriptionDemo({
         <section className="subscription-section subscription-business" aria-labelledby="business-case-title">
           <div className="subscription-section-heading">
             <div>
-              <span>03 / revenue logic</span>
-              <h3 id="business-case-title">The economics move with usage</h3>
+              <span>03 / pricing example</span>
+              <h3 id="business-case-title">How revenue changes</h3>
             </div>
-            <p>This is an illustrative revenue scenario, not paying-customer traction. The product behavior above is functional; external payment collection is the remaining production integration.</p>
+            <p>Example only. Payments are not connected.</p>
           </div>
           <div className="subscription-math" aria-label="Illustrative monthly recurring revenue scenario">
-            <div><span>Selected configuration</span><strong>{selectedQuote.monthlyRuns} runs · {selectedQuote.seats} {selectedQuote.seats === 1 ? 'seat' : 'seats'}</strong><em>{priceLabel(selectedQuote.monthlyPrice)} / mo</em></div>
+            <div><span>Selected plan</span><strong>{selectedQuote.monthlyRuns} runs · {selectedQuote.seats} {selectedQuote.seats === 1 ? 'seat' : 'seats'}</strong><em>{priceLabel(selectedQuote.monthlyPrice)} / mo</em></div>
             <div><span>100 customers</span><strong>100 × {priceLabel(selectedQuote.monthlyPrice)}</strong><em>${scenarioMrr.toLocaleString()} MRR</em></div>
-            <div className="subscription-math-total"><span>Metered product proof</span><strong>Human + WebMCP runs share one allowance</strong><em>Enforced now</em></div>
+            <div className="subscription-math-total"><span>Usage rules</span><strong>Manual + WebMCP runs share one limit</strong><em>Working now</em></div>
           </div>
-          <p className="subscription-hypothesis"><strong>Conversion trigger:</strong> upgrade when repeat research or collaboration needs exceed the current allowance. <strong>Cost control:</strong> LaunchPad blocks the next research run at the limit instead of creating an unapproved overage.</p>
+          <p className="subscription-hypothesis"><strong>Why users upgrade:</strong> more research runs or team seats. LaunchPad stops new runs at the limit.</p>
         </section>
       </aside>
     </div>

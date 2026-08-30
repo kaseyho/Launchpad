@@ -618,7 +618,7 @@ export function createFoundryService(
       if (!problemStatement) {
         return fail('update_problem_brief', actor, 'INVALID_PROBLEM_BRIEF', 'A non-empty problem statement is required.');
       }
-      return commit('update_problem_brief', 'Updated structured problem fields.', 'Problem brief updated and the refinery is ready.', actor, (workspace) => {
+      return commit('update_problem_brief', 'Updated problem details.', 'Problem saved.', actor, (workspace) => {
         const problemChanged = Boolean(workspace.problemBrief.problemStatement.trim())
           && workspace.problemBrief.problemStatement.trim() !== problemStatement;
         if (problemChanged) {
@@ -655,7 +655,7 @@ export function createFoundryService(
       if (workspace.stage === 'EMPTY') {
         return fail('plan_research', actor, 'PROBLEM_REQUIRED', 'Define the problem brief before planning research.');
       }
-      return commit('plan_research', `Planned research${input.focus ? ` for ${input.focus}` : ''}.`, 'Six source-lane questions are ready.', actor, (next) => {
+      return commit('plan_research', `Planned research${input.focus ? ` for ${input.focus}` : ''}.`, 'Research questions ready.', actor, (next) => {
         const existing = new Set(next.researchQuestions.map((question) => question.id));
         for (const question of createResearchQuestions(next.problemBrief, input.focus)) {
           if (!existing.has(question.id)) next.researchQuestions.push(clone(question));
@@ -754,7 +754,7 @@ export function createFoundryService(
       if (!hasExactPassage) {
         return fail('extract_findings', actor, 'NO_EXACT_PASSAGE', 'No exact supporting passage is available. Add a pasted excerpt or upload readable text before extraction.');
       }
-      return commit('extract_findings', `Extracted atomic findings from ${sourceIds.length} sources.`, 'Citation-complete findings moved into the inspection bay.', actor, (next) => {
+      return commit('extract_findings', `Read ${sourceIds.length} sources.`, 'Saved key findings with citations.', actor, (next) => {
         const existing = new Set(next.findings.map((finding) => finding.id));
         for (const sourceId of sourceIds) {
           const fixture = DEMO_FIXTURES.find((item) => item.source.id === sourceId);
@@ -862,7 +862,7 @@ export function createFoundryService(
       if (reviewed.length < 4) {
         return fail('synthesize_insights', actor, 'INSUFFICIENT_EVIDENCE', 'At least 4 accepted findings are required before synthesis.', { required: { acceptedFindings: 4 }, current: { acceptedFindings: reviewed.length } });
       }
-      return commit('synthesize_insights', 'Clustered accepted findings by underlying pattern.', 'Four inspectable insight modules assembled.', actor, (next) => {
+      return commit('synthesize_insights', 'Grouped reviewed findings by pattern.', 'Grouped findings and conflicts.', actor, (next) => {
         if (!isCuratedDemoProblem(next)) {
           next.insights = createCustomInsights(next);
           next.stage = 'INSIGHTS_READY';
@@ -911,7 +911,7 @@ export function createFoundryService(
       const count = input.proposals?.length
         ? Math.min(3, input.proposals.length) as 1 | 2 | 3
         : input.count ?? 3;
-      return commit('generate_idea_candidates', `Generated ${count} candidates from accepted insights.`, `${count} evidence-linked blueprints populated the idea forge.`, actor, (next) => {
+      return commit('generate_idea_candidates', `Built ${count} solution ${count === 1 ? 'draft' : 'drafts'}.`, `${count} solution ${count === 1 ? 'draft is' : 'drafts are'} ready.`, actor, (next) => {
         const fixtures = isCuratedDemoProblem(next) && !input.proposals?.length
           ? createCandidateFixtures()
           : createCustomCandidateFixtures(next, count, input.proposals);
@@ -938,7 +938,7 @@ export function createFoundryService(
       if (!candidate) return fail('stress_test_candidate', actor, 'CANDIDATE_NOT_FOUND', `Candidate ${input.candidateId} does not exist.`);
       const counterIds = getWorkspace().findings.filter((finding) => finding.evidenceType === 'counter_evidence' && accepted(finding)).map((finding) => finding.id);
       if (counterIds.length === 0) return fail('stress_test_candidate', actor, 'COUNTER_EVIDENCE_REQUIRED', 'Search and accept at least one counter-evidence finding before stress testing.');
-      return commit('stress_test_candidate', `Attacked ${candidate.name} with contradictions and adoption risks.`, 'Stress chamber recorded counter-evidence, assumptions, and feasibility risks.', actor, (workspace) => {
+      return commit('stress_test_candidate', `Checked ${candidate.name} against risks and conflicting findings.`, 'Risks and limits saved.', actor, (workspace) => {
         const customProblem = !isCuratedDemoProblem(workspace);
         const counterFindings = workspace.findings.filter((finding) => counterIds.includes(finding.id));
         const evidenceCaveats = workspace.findings.filter(accepted).flatMap((finding) => finding.caveats).slice(0, 3);
@@ -1031,16 +1031,16 @@ export function createFoundryService(
         expectedDuration: 'Two weeks, including prototype testing and one instrumented pilot cohort.',
         evidenceThatChangesRecommendation: 'No activation lift, expert users cannot exit cleanly, or sample-data previews materially reduce trust.',
       } : {
-        hypothesis: `If ${candidate.mechanism.charAt(0).toLowerCase()}${candidate.mechanism.slice(1)}, then ${workspace.problemBrief.desiredOutcome || 'the target behavior will improve'} for ${workspace.problemBrief.targetAudience || 'the affected audience'}.`,
+        hypothesis: `Test whether ${candidate.name} helps ${workspace.problemBrief.targetAudience || 'the affected audience'} achieve this result: ${workspace.problemBrief.desiredOutcome || 'improve the target behavior'}.`,
         targetParticipant: workspace.problemBrief.targetAudience || 'A small representative sample of the people most affected by the problem.',
         intervention: `A testable prototype of ${candidate.name} focused on its highest-evidence feature.`,
-        successMetric: `A pre-registered, observable improvement in ${workspace.problemBrief.desiredOutcome || 'the target behavior'} compared with the current baseline.`,
+        successMetric: `A clear improvement from the current baseline, measured against: ${workspace.problemBrief.desiredOutcome || 'the target behavior'}.`,
         failureThreshold: 'No meaningful improvement, a material increase in errors or burden, or evidence that the mechanism does not fit the target audience.',
         expectedDuration: workspace.problemBrief.timeframe || 'Two weeks for a prototype test and one measured pilot.',
         evidenceThatChangesRecommendation: 'A failed target metric, stronger counter-evidence, or a critical assumption disproven by the pilot.',
       };
 
-      return commit('finalize_blueprint', `Finalized ${candidate.name}.`, 'Proof-carrying idea blueprint locked with proof, caveats, assumptions, and the next test.', actor, (next) => {
+      return commit('finalize_blueprint', `Finished ${candidate.name}.`, 'Solution, sources, risks, and first test are ready.', actor, (next) => {
         const links = next.evidenceLinks.filter((link) => link.candidateId === candidate.id);
         const proofFindingIds = [...new Set(links.map((link) => link.findingId))].filter((findingId) => {
           const finding = next.findings.find((item) => item.id === findingId);

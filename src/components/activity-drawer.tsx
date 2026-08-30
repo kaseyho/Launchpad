@@ -56,9 +56,9 @@ export function ActivityDrawer({
       >
         <header className="activity-header">
           <div>
-            <span>Shared workspace history</span>
+            <span>Workspace history</span>
             <h2 id="activity-title">Activity</h2>
-            <p id="activity-description">Every human, agent, and system action in workspace version {workspace.version}.</p>
+            <p id="activity-description">Human, agent, and system actions for page version {workspace.version}.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close activity">Close</button>
         </header>

@@ -30,7 +30,7 @@ function FindingGroup({ title, findings, offset }: { title: string; findings: Fi
             </summary>
             <div className="research-detail">
               <div><span>Abstract excerpt</span><blockquote>{finding.citation.exactExcerpt}</blockquote></div>
-              <div className="research-detail-meta"><span>{finding.citation.authorOrPublisher}</span><span>Qualified from abstract — verify the full paper for high-stakes use.</span></div>
+              <div className="research-detail-meta"><span>{finding.citation.authorOrPublisher}</span><span>Based on the abstract. Read the full paper before high-stakes use.</span></div>
               <a href={finding.citation.urlOrDocumentId} target="_blank" rel="noreferrer">Open original research ↗</a>
             </div>
           </details>
@@ -49,11 +49,11 @@ export function ResearchFindings({ workspace }: { workspace: FoundryWorkspace })
   return (
     <section className="research-ledger" id="research-ledger" aria-label="Research findings">
       <header className="research-ledger-header">
-        <div><span>05 / SOURCE RECORDS</span><h3>Research appendix</h3></div>
-        <p>{findings.length} reviewed findings. Expand a row only when you need the original excerpt.</p>
+        <div><span>05 / SOURCES</span><h3>Source details</h3></div>
+        <p>{findings.length} findings. Open a row for the source excerpt.</p>
       </header>
       <div className="research-groups">
-        <FindingGroup title="Supporting research" findings={support} offset={0} />
+        <FindingGroup title="Supporting findings" findings={support} offset={0} />
         <FindingGroup title="Limits and cautions" findings={cautions} offset={support.length} />
       </div>
     </section>

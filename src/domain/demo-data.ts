@@ -452,7 +452,7 @@ export function createCandidateFixtures(): { candidates: IdeaCandidate[]; links:
     },
     {
       id: 'candidate-c',
-      name: 'Readiness Passport',
+      name: 'Readiness Check',
       oneLiner: 'A preflight that checks access, data, and ownership before setup begins and routes each blocker to the right owner.',
       targetUser: 'Administrators coordinating setup across technical and business owners',
       problem: 'Setup starts before prerequisites and decision owners are ready.',

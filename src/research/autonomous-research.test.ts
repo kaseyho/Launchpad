@@ -48,7 +48,7 @@ describe('autonomous LaunchPad research', () => {
     expect(workspace.sources).toHaveLength(7);
     expect(workspace.findings).toHaveLength(7);
     expect(workspace.findings.filter((finding) => finding.evidenceType === 'counter_evidence')).toHaveLength(2);
-    expect(blueprint.name).toBe('Readiness Passport');
+    expect(blueprint.name).toBe('Readiness Check');
     expect(blueprint.proofFindingIds.length).toBeGreaterThan(0);
     expect(blueprint.counterEvidenceIds.length).toBeGreaterThan(0);
   });
