@@ -52,7 +52,7 @@ export function EvidenceInspector({ workspace, open, onClose, onReview }: Eviden
                 <div><dt>DIRECTNESS</dt><dd>{finding.quality.directness.toUpperCase()}</dd></div>
               </dl>
               <div className="citation-panel">
-                <span>EXACT SOURCE PASSAGE</span>
+                <span>{finding.citation.evidenceOrigin === 'ai_web_synthesis' ? 'AI-GROUNDED FINDING' : 'EXACT SOURCE PASSAGE'}</span>
                 <blockquote>“{finding.citation.exactExcerpt}”</blockquote>
                 <a href={source.url.startsWith('http') ? source.url : undefined} target="_blank" rel="noreferrer" aria-disabled={!source.url.startsWith('http')}>
                   {source.title} · {finding.citation.pageOrSection} ↗

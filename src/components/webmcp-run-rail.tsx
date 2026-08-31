@@ -8,8 +8,8 @@ import { getLatestAgentEvent } from '../presentation/factory-stages';
 export function createAgentPrompt(workspace: FoundryWorkspace) {
   const problem = workspace.problemBrief.problemStatement.trim();
   return problem
-    ? `Call research_and_ideate once for this LaunchPad problem: “${problem}”. Then use the read-only WebMCP tools to inspect the final solution and its evidence lineage.`
-    : 'Wait for me to enter a problem in LaunchPad, then call research_and_ideate once and inspect the completed evidence-backed solution.';
+    ? `Call research_and_ideate once for this LaunchPad problem: “${problem}”. If the automatic run needs stronger coverage, use browser research or connected sources to find relevant Reddit/community discussions, public market or professional posts, and user-authorized analytics, then import those sources before inspecting the final solution and its evidence lineage.`
+    : 'Wait for me to enter a problem in LaunchPad, then call research_and_ideate once. If coverage is thin, find relevant public or user-authorized sources and import them before inspecting the completed evidence-backed solution.';
 }
 
 export function WebMCPRunRail({
@@ -57,8 +57,8 @@ export function WebMCPRunRail({
         <div className="webmcp-explanation">
           <div><span>01</span><strong>The user types once</strong><p>The webpage starts the complete research-to-solution run itself.</p></div>
           <div><span>02</span><strong>WebMCP exposes the run</strong><p>A browser agent can start the same one-shot workflow with <code>research_and_ideate</code>.</p></div>
-          <div><span>03</span><strong>{toolCount} tools preserve proof</strong><p>The agent can inspect sources, findings, decisions, and lineage without a pasted API key.</p></div>
-          <p className="webmcp-distinction"><strong>WebMCP is the control and verification layer.</strong> It is not another task the person must complete.</p>
+          <div><span>03</span><strong>{toolCount} tools preserve proof</strong><p>The agent can extend coverage with public conversations, professional posts, market signals, or user-authorized analytics, then inspect sources, findings, decisions, and lineage.</p></div>
+          <p className="webmcp-distinction"><strong>WebMCP is the control and verification layer.</strong> It is not another task the person must complete. Public web access varies by site; private analytics and signed-in sources must be explicitly connected or imported.</p>
         </div>
       )}
     </aside>

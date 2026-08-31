@@ -269,4 +269,42 @@ describe('FoundryService', () => {
     });
     expect(foundry.getWorkspace().findings).toHaveLength(0);
   });
+
+  it('labels AI web findings as synthesized rather than verbatim source excerpts', () => {
+    const foundry = createInMemoryFoundry();
+    foundry.service.updateProblemBrief({ problemStatement: 'Travelers need a reliable way to compare flight-booking costs.' });
+    const imported = foundry.service.importSource({
+      title: 'Flight price guidance',
+      sourceType: 'report',
+      url: 'https://travel.example.org/flight-prices',
+      excerpt: 'Comparing the total itinerary cost across flexible dates can reveal cheaper booking options.',
+      excerptKind: 'ai_web_synthesis',
+      lane: 'market',
+      publisher: 'Travel Research Institute',
+      publishedAt: '2026-01-15',
+    });
+    const sourceId = imported.ok ? imported.data.id : 'missing';
+
+    const extracted = foundry.service.extractFindings({ sourceIds: [sourceId] });
+
+    expect(imported).toMatchObject({
+      ok: true,
+      data: {
+        accessMode: 'public',
+        userProvided: false,
+        providedExcerptKind: 'ai_web_synthesis',
+      },
+    });
+    expect(extracted).toMatchObject({
+      ok: true,
+      data: [{
+        direct: false,
+        caveats: [expect.stringMatching(/AI web-search synthesis/i)],
+        citation: {
+          pageOrSection: 'AI web-search synthesis',
+          evidenceOrigin: 'ai_web_synthesis',
+        },
+      }],
+    });
+  });
 });

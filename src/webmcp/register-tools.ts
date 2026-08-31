@@ -89,7 +89,7 @@ export function getFoundryToolDefinitions(
     },
     {
       name: 'research_and_ideate',
-      description: 'Run the complete LaunchPad workflow in one action: structure the problem, search relevant research, extract and qualify cited findings, synthesize mechanisms, build one solution, stress-test it, and finalize the visible blueprint. This is the one-shot WebMCP entry point and visibly changes the entire page.',
+      description: 'Run the same server-side AI web-research workflow as the page: search the web for the actual problem, retain citation-linked supporting and counter evidence, build one problem-specific recommendation, stress-test it, and finalize the visible blueprint. A request for a specific live result may pause for essential missing details instead of inventing an answer. This is the one-shot WebMCP entry point and visibly changes the entire page.',
       inputSchema: objectSchema({
         problem_statement: stringProperty('Problem to research. Omit when the user has already submitted it in the page.'),
       }),
@@ -142,7 +142,7 @@ export function getFoundryToolDefinitions(
     },
     {
       name: 'search_sources',
-      description: 'Search one connected source lane for the active research plan. Connected results become deduplicated source crates; when no adapter results exist, the question stays open and the agent should use browser research followed by import_source.',
+      description: 'Search one connected source lane for the active research plan. Use this for first-party data, customer evidence, academic research, market and alternative products, community conversations, or counter-evidence. Connected results become deduplicated source crates; when no adapter results exist, use browser research or an authorized connection followed by import_source. Never treat a community anecdote as prevalence, and never claim access to private analytics without an explicit source.',
       inputSchema: objectSchema({
         lane: stringProperty('Single source lane to search.', lanes),
         query: stringProperty('Optional narrow query for this lane.'),
@@ -179,7 +179,7 @@ export function getFoundryToolDefinitions(
     },
     {
       name: 'extract_findings',
-      description: 'Extract atomic, citation-complete findings from selected sources. This moves new findings into the human inspection bay as pending evidence.',
+      description: 'Extract atomic, traceable findings from selected sources. Every finding keeps its source excerpt and lineage; community, market, and analytics evidence are valid source types but must retain their evidence category and limitations. This moves new findings into the human inspection bay as pending evidence.',
       inputSchema: objectSchema({ source_ids: stringArrayProperty('Specific source IDs; omit to process all available sources.') }),
       execute: (input) => toolResult(service.extractFindings({ sourceIds: input.source_ids as string[] | undefined }, 'agent')),
     },

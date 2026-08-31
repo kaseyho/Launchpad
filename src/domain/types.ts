@@ -81,6 +81,7 @@ export interface Source {
   retrievalStatus: 'available' | 'metadata_only' | 'inaccessible';
   extractionStatus: 'pending' | 'complete' | 'failed';
   providedExcerpt?: string;
+  providedExcerptKind?: 'verbatim' | 'ai_web_synthesis';
 }
 
 export interface Citation {
@@ -93,6 +94,7 @@ export interface Citation {
   exactExcerpt: string;
   retrievedAt: string;
   accessMode: Source['accessMode'];
+  evidenceOrigin?: 'verbatim_excerpt' | 'ai_web_synthesis';
 }
 
 export interface EvidenceQuality {

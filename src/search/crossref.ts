@@ -17,6 +17,8 @@ export interface AcademicSearchResult {
   publisher: string;
   url: string;
   excerpt?: string;
+  source_type?: 'paper' | 'community' | 'report' | 'competitor';
+  lane?: 'academic' | 'community' | 'market' | 'alternatives' | 'counter';
 }
 
 function textOnly(value: string) {

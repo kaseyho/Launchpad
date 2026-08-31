@@ -8,6 +8,10 @@ import { runAutonomousResearch, type AutonomousResearchProgress } from '../resea
 
 type AnyResult = ServiceSuccess<unknown> | ServiceFailure;
 type ExportFile = { filename: string; mimeType: string; content: string };
+type ResearchAllowance = {
+  check: () => { allowed: true; remaining: number } | { allowed: false; remaining: 0; message: string };
+  recordCompletedRun: () => void;
+};
 
 class FoundryController {
   private workspace: FoundryWorkspace;
@@ -30,7 +34,7 @@ class FoundryController {
   };
 }
 
-export function useFoundry(initialWorkspace?: FoundryWorkspace) {
+export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: ResearchAllowance) {
   const [controller] = useState(() => new FoundryController(initialWorkspace ?? createInitialWorkspace()));
   const workspace = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const service = controller.service;
@@ -116,6 +120,20 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
     return result;
   }, []);
 
+  const checkAllowance = useCallback(() => {
+    const result = allowance?.check();
+    if (!result || result.allowed) return true;
+    setResearchRun({
+      phase: 'error',
+      progress: 0,
+      message: 'Monthly research allowance reached.',
+      error: result.message,
+      errorCode: 'usage_limit',
+    });
+    setNotice(result.message);
+    return false;
+  }, [allowance]);
+
   const startResearch = useCallback(async (problemStatement?: string, actor: Actor = 'human') => {
     if (runAbortRef.current) return false;
     const problem = problemStatement?.trim() || controller.getSnapshot().problemBrief.problemStatement.trim();
@@ -123,6 +141,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
       setResearchRun({ phase: 'error', progress: 0, message: 'A problem statement is required.', error: 'Enter the problem you want LaunchPad to research.' });
       return false;
     }
+    if (!checkAllowance()) return false;
     const abortController = new AbortController();
     runAbortRef.current = abortController;
     setTraceNodes([]);
@@ -141,27 +160,38 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
         },
         pause: () => new Promise((resolve) => window.setTimeout(resolve, 140)),
       });
+      allowance?.recordCompletedRun();
       return true;
     } catch (error) {
       if (isAbortError(error)) {
-        setResearchRun({ phase: 'idle', progress: 0, message: 'Research stopped.' });
+        setResearchRun((current) => ({
+          phase: 'error',
+          progress: current.progress,
+          message: 'Research stopped.',
+          error: 'Your problem and completed work are safe. Retry when you are ready.',
+        }));
       } else {
         const message = error instanceof Error ? error.message : 'The research run could not be completed.';
-        setResearchRun({ phase: 'error', progress: 0, message: 'Research needs another attempt.', error: message });
+        setResearchRun((current) => ({ phase: 'error', progress: current.progress, message: 'Research needs another attempt.', error: message }));
         setNotice(message);
       }
       return false;
     } finally {
       runAbortRef.current = undefined;
     }
-  }, [controller, service]);
+  }, [allowance, checkAllowance, controller, service]);
 
-  const retryResearch = useCallback(() => {
-    const problem = controller.getSnapshot().problemBrief.problemStatement;
+  const stopResearch = useCallback(() => {
+    runAbortRef.current?.abort();
+  }, []);
+
+  const retryResearch = useCallback((problemStatement?: string) => {
+    const problem = problemStatement?.trim() || controller.getSnapshot().problemBrief.problemStatement;
     if (!problem) return;
+    if (!checkAllowance()) return;
     report(service.resetWorkspace('system'));
     void startResearch(problem, 'human');
-  }, [controller, report, service, startResearch]);
+  }, [checkAllowance, controller, report, service, startResearch]);
 
   const traceEvidence = useCallback((candidateId: string, componentPath: string) => {
     const result = service.traceEvidence({ candidateId, componentPath }, 'human');
@@ -220,6 +250,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace) {
     researchRun,
     traceNodes,
     startResearch,
+    stopResearch,
     retryResearch,
     report,
     traceEvidence,

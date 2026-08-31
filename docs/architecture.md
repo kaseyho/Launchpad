@@ -47,7 +47,7 @@ The first viewport keeps three responsibilities distinct: the launch brief defin
 
 ## WebMCP boundary
 
-The 17 tools register from the top-level client page through `document.modelContext.registerTool`. `research_and_ideate` mirrors the product’s complete autonomous run; the other 16 expose its underlying state and operations. Each tool:
+The 17 tools register from the top-level client page through `document.modelContext.registerTool`. `research_and_ideate` mirrors the product’s complete autonomous run, including the server-side AI/web-search request; the other 16 expose its underlying state and operations. WebMCP is the control plane, not a second research implementation. Each tool:
 
 - has a narrow JSON schema with `additionalProperties: false`;
 - operates only on the active anonymous workspace;
@@ -67,7 +67,9 @@ R2 stores uploaded bytes. The `uploaded_files` D1 table stores filename, MIME ty
 
 Text-like uploads can provide an exact excerpt to the normal import/extraction path. PDFs remain `metadata_only` until their content is supplied through a trusted parser or by the user. No uploaded content is rendered as HTML.
 
-Academic search calls Crossref from a same-origin server route and normalizes DOI, authors, publication date, venue, and publisher. Selecting a result imports metadata only. Extraction fails with `NO_EXACT_PASSAGE` until a readable, user-authorized passage is available; metadata is never silently promoted into evidence.
+The autonomous `/api/research` route calls SoCLaaS's OpenAI-compatible Responses API with forced web search and a strict report schema. It accepts a report only when each source URL appeared in the web-search output, the source set includes supporting and counter evidence, and the recommendation is specific to the submitted request. Requests for a current result without essential parameters return clarification questions rather than a fabricated recommendation. The SoCLaaS credential is server-only and is never returned to the browser or WebMCP.
+
+AI-produced findings are stored as conservative, citation-linked syntheses with `evidenceOrigin: ai_web_synthesis`; the UI tells the user to open the original source to verify wording and context. They are not represented as verbatim passages. Separately, the Crossref and Reddit adapters remain available through the same-origin manual search route. User-pasted text retains its verbatim origin, and metadata-only records still fail extraction with `NO_EXACT_PASSAGE`.
 
 ## Public/private evidence
 

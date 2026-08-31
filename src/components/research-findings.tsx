@@ -10,14 +10,27 @@ function takeaway(finding: Finding) {
   return text.length > 165 ? `${text.slice(0, 162).trim()}…` : text;
 }
 
+function evidencePresentation(finding: Finding) {
+  return finding.citation.evidenceOrigin === 'ai_web_synthesis'
+    ? {
+        label: 'Grounded finding',
+        note: 'AI-synthesized from web research — open the original source to verify wording and context.',
+      }
+    : {
+        label: 'Source excerpt',
+        note: 'Qualified from a retrieved excerpt — verify the original source for high-stakes use.',
+      };
+}
+
 function FindingGroup({ title, findings, offset }: { title: string; findings: Finding[]; offset: number }) {
   if (!findings.length) return null;
   return (
     <section className="research-group">
       <header><h3>{title}</h3><span>{findings.length}</span></header>
       <div className="research-rows">
-        {findings.map((finding, index) => (
-          <details key={finding.id} data-counter={finding.evidenceType === 'counter_evidence'}>
+        {findings.map((finding, index) => {
+          const presentation = evidencePresentation(finding);
+          return <details key={finding.id} data-counter={finding.evidenceType === 'counter_evidence'}>
             <summary>
               <span className="research-index">{String(offset + index + 1).padStart(2, '0')}</span>
               <div className="research-row-copy">
@@ -28,12 +41,12 @@ function FindingGroup({ title, findings, offset }: { title: string; findings: Fi
               <i aria-hidden="true">+</i>
             </summary>
             <div className="research-detail">
-              <div><span>Abstract excerpt</span><blockquote>{finding.citation.exactExcerpt}</blockquote></div>
-              <div className="research-detail-meta"><span>{finding.citation.authorOrPublisher}</span><span>Qualified from abstract — verify the full paper for high-stakes use.</span></div>
-              <a href={finding.citation.urlOrDocumentId} target="_blank" rel="noreferrer">Open original research ↗</a>
+              <div><span>{presentation.label}</span><blockquote>{finding.citation.exactExcerpt}</blockquote></div>
+              <div className="research-detail-meta"><span>{finding.citation.authorOrPublisher}</span><span>{presentation.note}</span></div>
+              <a href={finding.citation.urlOrDocumentId} target="_blank" rel="noreferrer">Open original source ↗</a>
             </div>
-          </details>
-        ))}
+          </details>;
+        })}
       </div>
     </section>
   );
@@ -47,7 +60,7 @@ export function ResearchFindings({ workspace }: { workspace: FoundryWorkspace })
     <section className="research-ledger" id="research-ledger" aria-label="Research findings">
       <header className="research-ledger-header">
         <div><span>Source library / {findings.length} findings</span><h2>Research, without the wall of text.</h2></div>
-        <p>Scan the takeaway first. Expand only when you need the abstract excerpt, publication details, or original paper.</p>
+        <p>Scan the takeaway first. Expand only when you need the grounded finding, publication details, or original source.</p>
       </header>
       <div className="research-groups">
         <FindingGroup title="Supporting research" findings={support} offset={0} />

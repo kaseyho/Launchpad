@@ -67,7 +67,7 @@ export function SourceDialog({ open, onClose, service, report }: SourceDialogPro
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [academicResults, setAcademicResults] = useState<AcademicSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<AcademicSearchResult[]>([]);
   if (!open) return null;
 
   return (
@@ -123,18 +123,18 @@ export function SourceDialog({ open, onClose, service, report }: SourceDialogPro
             try {
               const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}`);
               const payload = await response.json() as { results?: AcademicSearchResult[]; message?: string };
-              if (!response.ok) throw new Error(payload.message || 'Academic metadata search failed.');
-              setAcademicResults(payload.results ?? []);
-              if (!payload.results?.length) setError('No citation-complete Crossref records matched that query.');
+              if (!response.ok) throw new Error(payload.message || 'Public source search failed.');
+              setSearchResults(payload.results ?? []);
+              if (!payload.results?.length) setError('No usable public research or community sources matched that query.');
             } catch (caught) {
-              setError(caught instanceof Error ? caught.message : 'Academic metadata search failed.');
+              setError(caught instanceof Error ? caught.message : 'Public source search failed.');
             } finally {
               setSearching(false);
             }
-          }}>{searching ? 'SEARCHING…' : 'SEARCH CROSSREF ↗'}</button>
-          {academicResults.length > 0 && <div className="academic-results" aria-label="Academic search results">
-            {academicResults.map((result) => <button key={result.doi} type="button" onClick={() => {
-              setTitle(result.title); setUrl(result.url); setExcerpt(''); setSourceType('paper'); setAcademicResults([]);
+          }}>{searching ? 'SEARCHING…' : 'SEARCH PUBLIC SOURCES ↗'}</button>
+          {searchResults.length > 0 && <div className="academic-results" aria-label="Public source search results">
+            {searchResults.map((result) => <button key={result.doi} type="button" onClick={() => {
+              setTitle(result.title); setUrl(result.url); setExcerpt(''); setSourceType(result.source_type === 'community' ? 'community' : 'paper'); setSearchResults([]);
             }}><strong>{result.title}</strong><span>{result.authors} · {result.published_at} · {result.venue}</span></button>)}
           </div>}
         </div>

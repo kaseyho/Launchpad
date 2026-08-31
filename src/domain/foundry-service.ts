@@ -92,6 +92,7 @@ export interface FoundryService {
     sourceType: Source['sourceType'];
     url?: string;
     excerpt?: string;
+    excerptKind?: Source['providedExcerptKind'];
     lane?: SourceLane;
     private?: boolean;
     synthetic?: boolean;
@@ -706,6 +707,7 @@ export function createFoundryService(
       }
       return commit('import_source', `Imported ${input.sourceType} source ${input.title}.`, 'Source crate added and ready for extraction.', actor, (workspace) => {
         const id = `source-import-${fingerprint}`;
+        const isAIWebSynthesis = input.excerptKind === 'ai_web_synthesis';
         const source: Source = {
           id,
           lane: input.lane ?? 'customer',
@@ -715,8 +717,8 @@ export function createFoundryService(
           publisher: input.publisher?.trim() || 'User-provided source',
           publishedAt: input.publishedAt?.trim() || now().slice(0, 10),
           url: input.url?.trim() || `document://${id}.txt`,
-          accessMode: input.private ? 'private' : 'user_provided',
-          userProvided: true,
+          accessMode: input.private ? 'private' : isAIWebSynthesis ? 'public' : 'user_provided',
+          userProvided: !isAIWebSynthesis,
           synthetic: input.synthetic ?? false,
           private: input.private ?? false,
           contentHash: fingerprint,
@@ -724,6 +726,7 @@ export function createFoundryService(
           retrievalStatus: 'available',
           extractionStatus: 'pending',
           providedExcerpt: input.excerpt?.trim(),
+          providedExcerptKind: input.excerpt ? input.excerptKind ?? 'verbatim' : undefined,
         };
         workspace.sources.push(source);
         workspace.stage = 'SOURCING';
@@ -760,6 +763,7 @@ export function createFoundryService(
             const source = next.sources.find((item) => item.id === sourceId)!;
             const excerpt = source.providedExcerpt?.trim();
             if (excerpt) {
+              const isAIWebSynthesis = source.providedExcerptKind === 'ai_web_synthesis';
               const findingId = `finding-${hashText(`${sourceId}|${excerpt}`)}`;
               if (!existing.has(findingId)) {
                 const percentage = excerpt.match(/\b(\d+(?:\.\d+)?)\s*(?:%|percent\b)/i);
@@ -788,8 +792,10 @@ export function createFoundryService(
                   population: 'Not supplied',
                   geography: 'Not supplied',
                   timeframe: source.publishedAt,
-                  direct: true,
-                  caveats: ['User-provided excerpt requires human review before acceptance.'],
+                  direct: !isAIWebSynthesis,
+                  caveats: [isAIWebSynthesis
+                    ? 'AI web-search synthesis linked to the cited source; open the original source to verify the wording and context.'
+                    : 'User-provided excerpt requires human review before acceptance.'],
                   reviewStatus: 'pending',
                   extractionConfidence: 'moderate',
                   quality: {
@@ -802,10 +808,11 @@ export function createFoundryService(
                     authorOrPublisher: source.author || source.publisher,
                     publishedDate: source.publishedAt,
                     urlOrDocumentId: source.url,
-                    pageOrSection: 'User-provided excerpt',
+                    pageOrSection: isAIWebSynthesis ? 'AI web-search synthesis' : 'User-provided excerpt',
                     exactExcerpt: excerpt.slice(0, 260),
                     retrievedAt: now(),
                     accessMode: source.accessMode,
+                    evidenceOrigin: isAIWebSynthesis ? 'ai_web_synthesis' : 'verbatim_excerpt',
                   },
                   synthetic: source.synthetic,
                 });
