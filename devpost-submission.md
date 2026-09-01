@@ -177,6 +177,6 @@ For the shortest judging path, use this mission:
 - [x] Core WebMCP implementation pushed to the public branch
 - [x] Devpost project created and synchronized with the draft
 - [x] Final narrated 2:06 demo rendered and visually checked
-- [ ] Final judge-layout polish and demo evidence pushed to the public branch
+- [x] Final judge-layout polish and demo evidence pushed to the public branch
 - [ ] Demo uploaded publicly to YouTube or Vimeo
 - [ ] Final submission confirmed and verified
