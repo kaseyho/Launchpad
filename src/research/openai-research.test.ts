@@ -4,6 +4,7 @@ import { researchWithProvider } from './openai-research';
 const flightReport = {
   status: 'complete' as const,
   questions: [],
+  normalized_problem: 'How to find the cheapest flight booking',
   target_audience: 'Travelers comparing flight options',
   desired_outcome: 'Minimize the total payable airfare for a viable itinerary',
   recommendation: {
@@ -55,7 +56,7 @@ describe('OpenAI grounded web research', () => {
       headers: { 'content-type': 'application/json' },
     }));
 
-    const report = await researchWithProvider('find cheapest flight price booking', {
+    const report = await researchWithProvider('hwo to find cheapest flight booking', {
       apiKey: 'test-key',
       fetcher,
       model: 'gpt-test',
@@ -72,6 +73,8 @@ describe('OpenAI grounded web research', () => {
     expect(request.tool_choice).toEqual({ type: 'web_search' });
     expect(request.text.format).toMatchObject({ type: 'json_schema', strict: true });
     expect(request.store).toBe(false);
+    expect(request.input).toMatch(/correct obvious spelling and grammar/i);
+    expect(request.input).toContain('hwo to find cheapest flight booking');
   });
 
   it('rejects a report source that was not returned by the web search call', async () => {

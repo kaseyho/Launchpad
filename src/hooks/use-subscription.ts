@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   PLAN_DEFINITIONS,
   applyPlanQuote,
@@ -24,8 +24,19 @@ function getStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 }
 
 export function useSubscription() {
-  const [subscription, setSubscription] = useState<SubscriptionState>(() => loadSubscription(getStorage()));
+  const [subscription, setSubscription] = useState<SubscriptionState>(() => loadSubscription(undefined));
   const subscriptionRef = useRef(subscription);
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      const stored = loadSubscription(getStorage());
+      subscriptionRef.current = stored;
+      setSubscription(stored);
+    });
+    return () => { active = false; };
+  }, []);
 
   const commit = useCallback((update: (current: SubscriptionState) => SubscriptionState) => {
     setSubscription((current) => {

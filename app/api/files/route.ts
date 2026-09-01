@@ -1,4 +1,5 @@
 import { storeUpload } from '../../../db/storage';
+import { WORKSPACE_COOKIE_NAME } from '../../../src/persistence/workspace-identity';
 
 export const runtime = 'edge';
 
@@ -25,8 +26,8 @@ function storageWorkspaceId(request: Request) {
   const existing = request.headers.get('cookie')
     ?.split(';')
     .map((part) => part.trim())
-    .find((part) => part.startsWith('pf_workspace='))
-    ?.slice('pf_workspace='.length);
+    .find((part) => part.startsWith(`${WORKSPACE_COOKIE_NAME}=`))
+    ?.slice(`${WORKSPACE_COOKIE_NAME}=`.length);
   return existing && /^workspace-[a-f0-9-]{36}$/.test(existing)
     ? existing
     : `workspace-unclaimed-${crypto.randomUUID()}`;

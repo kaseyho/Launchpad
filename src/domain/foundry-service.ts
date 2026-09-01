@@ -2,6 +2,10 @@ import { DEMO_FIXTURES, RESEARCH_QUESTION_TEMPLATES, createCandidateFixtures } f
 import type {
   Actor,
   Blueprint,
+  EvidenceBatchItem,
+  EvidenceGapAction,
+  EvidencePolicy,
+  EvidencePolicyComparison,
   EvidenceType,
   Finding,
   FoundryWorkspace,
@@ -77,6 +81,7 @@ export interface FoundryStateSummary {
     candidates: number;
     contradictions: number;
     unsupportedComponents: number;
+    privateSources: number;
   };
   selectedCandidate?: { id: string; name: string; coverage: number; score: number };
   warnings: string[];
@@ -100,6 +105,7 @@ export interface FoundryService {
     publisher?: string;
     publishedAt?: string;
   }, actor?: Actor): ServiceResult<Source>;
+  ingestEvidenceBatch(input: { items: EvidenceBatchItem[] }, actor?: Actor): ServiceResult<{ createdIds: string[]; existingIds: string[]; sources: Source[] }>;
   extractFindings(input: { sourceIds?: string[] }, actor?: Actor): ServiceResult<Finding[]>;
   reviewFindings(input: {
     decision: 'accept' | 'reject' | 'qualify';
@@ -107,7 +113,9 @@ export interface FoundryService {
     evidenceType?: EvidenceType;
     note?: string;
   }, actor?: Actor): ServiceResult<Finding[]>;
-  getEvidenceGaps(actor?: Actor): ServiceResult<{ gaps: string[]; warnings: string[] }>;
+  getEvidenceGaps(actor?: Actor): ServiceResult<{ gaps: string[]; warnings: string[]; nextActions: EvidenceGapAction[] }>;
+  compareEvidencePolicy(input: { policy: Partial<EvidencePolicy> }, actor?: Actor): ServiceResult<EvidencePolicyComparison>;
+  applyEvidencePolicy(input: { policy: Partial<EvidencePolicy> }, actor?: Actor): ServiceResult<EvidencePolicyComparison>;
   synthesizeInsights(input?: Record<string, never>, actor?: Actor): ServiceResult<FoundryWorkspace['insights']>;
   generateIdeaCandidates(input?: { count?: 1 | 2 | 3; proposals?: IdeaCandidateProposal[] }, actor?: Actor): ServiceResult<IdeaCandidate[]>;
   inspectCandidate(input: { candidateId: string }, actor?: Actor): ServiceResult<{ candidate: IdeaCandidate; links: FoundryWorkspace['evidenceLinks'] }>;
@@ -124,12 +132,27 @@ export interface FoundryService {
   resetWorkspace(actor?: Actor): ServiceResult<FoundryWorkspace>;
 }
 
-function failure(
-  code: string,
-  message: string,
-  details: Pick<NonNullable<ServiceFailure['error']>, 'required' | 'current'> = {},
-): ServiceFailure {
-  return { ok: false, error: { code, message, ...details } };
+export function nextActionsForWorkspace(workspace: FoundryWorkspace): string[] {
+  switch (workspace.stage) {
+    case 'EMPTY':
+      return ['update_problem_brief', 'research_and_ideate'];
+    case 'PROBLEM_DEFINED':
+      return ['plan_research', 'research_and_ideate', 'ingest_evidence_batch'];
+    case 'RESEARCH_PLANNED':
+    case 'SOURCING':
+      return ['ingest_evidence_batch', 'search_sources', 'extract_findings', 'get_evidence_gaps'];
+    case 'EVIDENCE_REVIEW':
+      return ['review_evidence_with_consent', 'get_evidence_gaps', 'synthesize_insights', 'compare_evidence_policy'];
+    case 'INSIGHTS_READY':
+      return ['generate_idea_candidates', 'get_evidence_gaps', 'compare_evidence_policy'];
+    case 'CANDIDATES_READY':
+      return ['inspect_candidate', 'compare_evidence_policy', 'apply_evidence_policy', 'stress_test_candidate'];
+    case 'STRESS_TESTING':
+    case 'BLUEPRINT_READY':
+      return ['trace_evidence', 'compare_evidence_policy', 'finalize_blueprint_with_consent'];
+    case 'FINALIZED':
+      return ['trace_evidence', 'compare_evidence_policy', 'export_blueprint_with_consent'];
+  }
 }
 
 function safeTitle(problem: string) {
@@ -230,11 +253,46 @@ function accepted(finding: Finding) {
   return finding.reviewStatus === 'accepted' || finding.reviewStatus === 'qualified';
 }
 
+export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
+  minimumCorroboration: 1,
+  includePrivate: true,
+};
+
+function normalizeEvidencePolicy(policy: Partial<EvidencePolicy> = {}): EvidencePolicy {
+  return {
+    ...(policy.allowedSourceTypes?.length ? { allowedSourceTypes: [...new Set(policy.allowedSourceTypes)] } : {}),
+    ...(policy.earliestPublishedAt?.trim() ? { earliestPublishedAt: policy.earliestPublishedAt.trim() } : {}),
+    ...(policy.geography?.trim() ? { geography: policy.geography.trim() } : {}),
+    minimumCorroboration: policy.minimumCorroboration ?? DEFAULT_EVIDENCE_POLICY.minimumCorroboration,
+    includePrivate: policy.includePrivate ?? DEFAULT_EVIDENCE_POLICY.includePrivate,
+  };
+}
+
+function findingEligible(workspace: FoundryWorkspace, finding: Finding, policy = normalizeEvidencePolicy(workspace.activeEvidencePolicy)): boolean {
+  if (!accepted(finding)) return false;
+  const source = sourceForFinding(workspace, finding);
+  if (!source) return false;
+  if (!policy.includePrivate && source.private) return false;
+  if (policy.allowedSourceTypes?.length && !policy.allowedSourceTypes.includes(source.sourceType)) return false;
+  if (policy.earliestPublishedAt && source.publishedAt && source.publishedAt < policy.earliestPublishedAt) return false;
+  if (policy.geography) {
+    const geography = finding.geography.trim().toLowerCase();
+    const required = policy.geography.toLowerCase();
+    if (!geography.includes(required)) return false;
+  }
+  return true;
+}
+
+function eligibleFindings(workspace: FoundryWorkspace, policy = normalizeEvidencePolicy(workspace.activeEvidencePolicy)) {
+  return workspace.findings.filter((finding) => findingEligible(workspace, finding, policy));
+}
+
 function evidenceCategories(workspace: FoundryWorkspace) {
-  return new Set(workspace.findings.filter(accepted).map((finding) => finding.evidenceType));
+  return new Set(eligibleFindings(workspace).map((finding) => finding.evidenceType));
 }
 
 function calculateCandidate(workspace: FoundryWorkspace, candidate: IdeaCandidate): IdeaCandidate {
+  const policy = normalizeEvidencePolicy(workspace.activeEvidencePolicy);
   const componentPaths = ['mechanism', ...candidate.features.map((_, index) => `features.${index}`)];
   const unsupportedComponents = componentPaths.filter((path) => {
     const links = workspace.evidenceLinks.filter((link) => (
@@ -242,10 +300,13 @@ function calculateCandidate(workspace: FoundryWorkspace, candidate: IdeaCandidat
       && link.componentPath === path
       && link.relationshipType !== 'contradicts'
     ));
-    return !links.some((link) => {
+    const supportingFamilies = new Set(links.flatMap((link) => {
       const finding = workspace.findings.find((item) => item.id === link.findingId);
-      return finding ? accepted(finding) : false;
-    });
+      if (!finding || !findingEligible(workspace, finding, policy)) return [];
+      const source = sourceForFinding(workspace, finding);
+      return source ? [source.sourceFamilyId] : [];
+    }));
+    return supportingFamilies.size < policy.minimumCorroboration;
   });
   const coverage = Math.round(((componentPaths.length - unsupportedComponents.length) / componentPaths.length) * 100);
   return {
@@ -269,7 +330,7 @@ function recalculateCandidates(workspace: FoundryWorkspace) {
 }
 
 function evidenceGapSnapshot(workspace: FoundryWorkspace) {
-  const reviewed = workspace.findings.filter(accepted);
+  const reviewed = eligibleFindings(workspace);
   const domains = new Set(reviewed.map((finding) => sourceForFinding(workspace, finding)).filter(Boolean).map((source) => sourceDomain(source!)));
   const categories = evidenceCategories(workspace);
   const curatedDemo = isCuratedDemoProblem(workspace);
@@ -277,17 +338,70 @@ function evidenceGapSnapshot(workspace: FoundryWorkspace) {
   const requiredDomains = curatedDemo ? 3 : 2;
   const gaps: string[] = [];
   const warnings: string[] = [];
+  const nextActions: EvidenceGapAction[] = [];
 
-  if (reviewed.length < requiredFindings) gaps.push(`${requiredFindings - reviewed.length} more accepted findings needed for the default gate.`);
-  if (domains.size < requiredDomains) gaps.push(`${requiredDomains - domains.size} more independent source domains needed.`);
-  if (categories.size < 2) gaps.push(`${2 - categories.size} more evidence categories needed.`);
-  if (curatedDemo && !reviewed.some((finding) => typeof finding.value === 'number')) gaps.push('At least one quantitative finding is required.');
-  if (curatedDemo && !reviewed.some((finding) => typeof finding.value !== 'number')) gaps.push('At least one qualitative finding is required.');
-  if (!reviewed.some((finding) => finding.evidenceType === 'counter_evidence')) gaps.push('A counter-evidence finding is required before finalization.');
+  if (reviewed.length < requiredFindings) {
+    const reason = `${requiredFindings - reviewed.length} more accepted findings needed for the default gate.`;
+    gaps.push(reason);
+    nextActions.push({ lane: 'customer', evidenceType: 'primary_user_evidence', reason, suggestedTool: 'ingest_evidence_batch' });
+  }
+  if (domains.size < requiredDomains) {
+    const reason = `${requiredDomains - domains.size} more independent source domains needed.`;
+    gaps.push(reason);
+    nextActions.push({ lane: 'academic', evidenceType: 'primary_research', reason, suggestedTool: 'search_sources' });
+  }
+  if (categories.size < 2) {
+    const reason = `${2 - categories.size} more evidence categories needed.`;
+    gaps.push(reason);
+    nextActions.push({ lane: 'market', evidenceType: 'market_signal', reason, suggestedTool: 'ingest_evidence_batch' });
+  }
+  if (curatedDemo && !reviewed.some((finding) => typeof finding.value === 'number')) {
+    const reason = 'At least one quantitative finding is required.';
+    gaps.push(reason);
+    nextActions.push({ lane: 'first_party', evidenceType: 'first_party_behavioral', reason, suggestedTool: 'ingest_evidence_batch' });
+  }
+  if (curatedDemo && !reviewed.some((finding) => typeof finding.value !== 'number')) {
+    const reason = 'At least one qualitative finding is required.';
+    gaps.push(reason);
+    nextActions.push({ lane: 'customer', evidenceType: 'primary_user_evidence', reason, suggestedTool: 'ingest_evidence_batch' });
+  }
+  if (!reviewed.some((finding) => finding.evidenceType === 'counter_evidence')) {
+    const reason = 'A counter-evidence finding is required before finalization.';
+    gaps.push(reason);
+    nextActions.push({ lane: 'counter', evidenceType: 'counter_evidence', reason, suggestedTool: 'search_sources' });
+  }
   if (reviewed.some((finding) => finding.evidenceType === 'community_anecdote')) warnings.push('Community anecdotes are accepted but remain weak, non-prevalence evidence.');
   if (reviewed.some((finding) => finding.synthetic)) warnings.push('Synthetic first-party evidence is clearly labeled and must be replaced for a real decision.');
 
-  return { gaps, warnings };
+  return { gaps, warnings, nextActions };
+}
+
+function candidateRanking(workspace: FoundryWorkspace) {
+  return [...workspace.candidates]
+    .sort((a, b) => b.score - a.score)
+    .map((candidate) => ({ candidateId: candidate.id, score: candidate.score, coverage: candidate.coverage }));
+}
+
+function comparePolicyInWorkspace(workspace: FoundryWorkspace, proposed: EvidencePolicy): EvidencePolicyComparison {
+  const baselinePolicy = normalizeEvidencePolicy(workspace.activeEvidencePolicy);
+  const baseline = clone(workspace);
+  recalculateCandidates(baseline);
+  const counterfactual = clone(workspace);
+  counterfactual.activeEvidencePolicy = proposed;
+  recalculateCandidates(counterfactual);
+  const eligible = eligibleFindings(workspace, proposed);
+  const eligibleIds = new Set(eligible.map((finding) => finding.id));
+  const baselineRanking = candidateRanking(baseline);
+  const proposedRanking = candidateRanking(counterfactual);
+  return {
+    baselinePolicy,
+    proposedPolicy: proposed,
+    eligibleFindingIds: eligible.map((finding) => finding.id),
+    excludedFindingIds: workspace.findings.filter(accepted).map((finding) => finding.id).filter((id) => !eligibleIds.has(id)),
+    baselineRanking,
+    proposedRanking,
+    recommendationChanged: baselineRanking[0]?.candidateId !== proposedRanking[0]?.candidateId,
+  };
 }
 
 function summarizeFindings(findings: Finding[]) {
@@ -295,7 +409,7 @@ function summarizeFindings(findings: Finding[]) {
 }
 
 function createCustomInsights(workspace: FoundryWorkspace): FoundryWorkspace['insights'] {
-  const reviewed = workspace.findings.filter(accepted);
+  const reviewed = eligibleFindings(workspace);
   const counter = reviewed.filter((finding) => finding.evidenceType === 'counter_evidence');
   const groups = [
     {
@@ -472,7 +586,8 @@ function markdownForBlueprint(workspace: FoundryWorkspace, blueprint: Blueprint,
     .filter((finding) => includePrivate || !sourceForFinding(workspace, finding)?.private);
   const counterFindings = blueprint.counterEvidenceIds
     .map((id) => workspace.findings.find((finding) => finding.id === id))
-    .filter((finding): finding is Finding => Boolean(finding));
+    .filter((finding): finding is Finding => Boolean(finding))
+    .filter((finding) => includePrivate || !sourceForFinding(workspace, finding)?.private);
 
   return [
     `# ${blueprint.name}`,
@@ -556,7 +671,26 @@ export function createFoundryService(
       status: 'success',
     });
     setWorkspace(workspace);
-    return { ok: true, data: clone(data), message: outputSummary, modifiedIds: modifiedIds(data) };
+    return {
+      ok: true,
+      data: clone(data),
+      message: outputSummary,
+      modifiedIds: modifiedIds(data),
+      workspaceVersion: workspace.version,
+      nextActions: nextActionsForWorkspace(workspace),
+    };
+  };
+
+  const read = <T,>(data: T, message: string): ServiceResult<T> => {
+    const workspace = getWorkspace();
+    return {
+      ok: true,
+      data: clone(data),
+      message,
+      modifiedIds: [],
+      workspaceVersion: workspace.version,
+      nextActions: nextActionsForWorkspace(workspace),
+    };
   };
 
   const fail = (
@@ -582,33 +716,54 @@ export function createFoundryService(
       status: 'error',
     });
     setWorkspace(workspace);
-    return failure(code, message, details);
+    return {
+      ok: false,
+      workspaceVersion: workspace.version,
+      nextActions: nextActionsForWorkspace(workspace),
+      error: { code, message, ...details },
+    };
+  };
+
+  const readFail = (
+    code: string,
+    message: string,
+    details: Pick<NonNullable<ServiceFailure['error']>, 'required' | 'current'> = {},
+  ): ServiceFailure => {
+    const workspace = getWorkspace();
+    return {
+      ok: false,
+      workspaceVersion: workspace.version,
+      nextActions: nextActionsForWorkspace(workspace),
+      error: { code, message, ...details },
+    };
   };
 
   return {
     getFoundryState(actor = 'agent') {
+      void actor;
       const workspace = getWorkspace();
       const gaps = evidenceGapSnapshot(workspace);
       const selected = workspace.candidates.find((candidate) => candidate.id === workspace.selectedCandidateId);
-      return commit('get_foundry_state', 'Read the active foundry state.', 'Returned current stage, counts, warnings, and selected candidate.', actor, (next) => ({
-        workspaceId: next.id,
-        title: next.title,
-        stage: next.stage,
-        version: next.version + 1,
-        problemBrief: clone(next.problemBrief),
+      return read({
+        workspaceId: workspace.id,
+        title: workspace.title,
+        stage: workspace.stage,
+        version: workspace.version,
+        problemBrief: clone(workspace.problemBrief),
         counts: {
-          researchQuestions: next.researchQuestions.length,
-          sources: next.sources.length,
-          findings: next.findings.length,
-          acceptedFindings: next.findings.filter(accepted).length,
-          insights: next.insights.length,
-          candidates: next.candidates.length,
-          contradictions: next.findings.filter((finding) => finding.evidenceType === 'counter_evidence' && accepted(finding)).length,
-          unsupportedComponents: next.candidates.reduce((sum, candidate) => sum + candidate.unsupportedComponents.length, 0),
+          researchQuestions: workspace.researchQuestions.length,
+          sources: workspace.sources.length,
+          findings: workspace.findings.length,
+          acceptedFindings: workspace.findings.filter(accepted).length,
+          insights: workspace.insights.length,
+          candidates: workspace.candidates.length,
+          contradictions: workspace.findings.filter((finding) => finding.evidenceType === 'counter_evidence' && accepted(finding)).length,
+          unsupportedComponents: workspace.candidates.reduce((sum, candidate) => sum + candidate.unsupportedComponents.length, 0),
+          privateSources: workspace.sources.filter((source) => source.private).length,
         },
         selectedCandidate: selected ? { id: selected.id, name: selected.name, coverage: selected.coverage, score: selected.score } : undefined,
         warnings: [...gaps.gaps, ...gaps.warnings],
-      }));
+      }, 'Returned current stage, counts, warnings, and selected candidate.');
     },
 
     updateProblemBrief(input, actor = 'human') {
@@ -686,6 +841,80 @@ export function createFoundryService(
       }, (items) => items.map((source) => source.id));
     },
 
+    ingestEvidenceBatch(input, actor = 'human') {
+      if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 8) {
+        return fail('ingest_evidence_batch', actor, 'INVALID_EVIDENCE_BATCH', 'Provide between 1 and 8 evidence items in one batch.');
+      }
+      const allowedOrigins = new Set(['public_web', 'user_provided', 'connected_private', 'first_party']);
+      const allowedMethods = new Set(['browser_agent', 'authorized_connector', 'paste', 'upload', 'system_research']);
+      for (const item of input.items) {
+        if (item.private && (item.provenance.permissionScope !== 'user_authorized'
+          || !['connected_private', 'first_party'].includes(item.provenance.origin))) {
+          return fail('ingest_evidence_batch', actor, 'EVIDENCE_PERMISSION_REQUIRED', `Private evidence “${item.title}” requires an explicit user-authorized permission scope.`);
+        }
+        if (!allowedOrigins.has(item.provenance.origin) || !allowedMethods.has(item.provenance.retrievalMethod)) {
+          return fail('ingest_evidence_batch', actor, 'INVALID_EVIDENCE_ORIGIN', `Evidence “${item.title}” has an unsupported provenance origin or retrieval method.`);
+        }
+        if (!item.title?.trim() || !item.excerpt?.trim()) {
+          return fail('ingest_evidence_batch', actor, 'INVALID_EVIDENCE_ITEM', 'Every evidence item needs a title and an exact or disclosed synthesized passage.');
+        }
+        const retrievedAt = Date.parse(item.provenance.retrievedAt);
+        if (!item.provenance.retrievedAt.includes('T') || Number.isNaN(retrievedAt)) {
+          return fail('ingest_evidence_batch', actor, 'INVALID_RETRIEVAL_TIME', `Evidence “${item.title}” needs a valid ISO retrieval timestamp.`);
+        }
+        if (item.url) {
+          try {
+            const parsed = new URL(item.url);
+            if (!['http:', 'https:', 'document:'].includes(parsed.protocol) || ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname)) throw new Error('unsafe');
+          } catch {
+            return fail('ingest_evidence_batch', actor, 'INVALID_SOURCE_URL', `Evidence “${item.title}” has an invalid or unsafe source URL.`);
+          }
+        }
+      }
+
+      return commit('ingest_evidence_batch', `Validated ${input.items.length} provenance-rich evidence items.`, 'Evidence batch added atomically with permission and retrieval metadata.', actor, (workspace) => {
+        const createdIds: string[] = [];
+        const existingIds: string[] = [];
+        const batchSources: Source[] = [];
+        for (const item of input.items) {
+          const fingerprint = hashText(`${item.title}|${item.url ?? ''}|${item.excerpt}`);
+          const existing = workspace.sources.find((source) => source.contentHash === fingerprint);
+          if (existing) {
+            existingIds.push(existing.id);
+            if (!batchSources.some((source) => source.id === existing.id)) batchSources.push(existing);
+            continue;
+          }
+          const id = `source-batch-${fingerprint}`;
+          const source: Source = {
+            id,
+            lane: item.lane,
+            sourceType: item.sourceType,
+            title: item.title.trim(),
+            author: item.author?.trim() || (item.provenance.origin === 'user_provided' ? 'User provided' : 'Not specified'),
+            publisher: item.publisher?.trim() || 'Not specified',
+            publishedAt: item.publishedAt?.trim() || item.provenance.retrievedAt.slice(0, 10),
+            url: item.url?.trim() || `document://${id}.txt`,
+            accessMode: item.private ? 'private' : item.provenance.origin === 'user_provided' ? 'user_provided' : 'public',
+            userProvided: item.provenance.origin === 'user_provided',
+            synthetic: item.synthetic ?? false,
+            private: item.private ?? false,
+            contentHash: fingerprint,
+            sourceFamilyId: `family-${hashText(item.url ? sourceDomain({ url: item.url, sourceFamilyId: id, publisher: item.publisher ?? '' } as Source) : id)}`,
+            retrievalStatus: 'available',
+            extractionStatus: 'pending',
+            providedExcerpt: item.excerpt.trim(),
+            providedExcerptKind: item.excerptKind ?? 'verbatim',
+            provenance: clone(item.provenance),
+          };
+          workspace.sources.push(source);
+          batchSources.push(source);
+          createdIds.push(id);
+        }
+        workspace.stage = 'SOURCING';
+        return { createdIds, existingIds, sources: batchSources };
+      }, (result) => result.createdIds);
+    },
+
     importSource(input, actor = 'human') {
       if (!input.title.trim() || (!input.url?.trim() && !input.excerpt?.trim())) {
         return fail('import_source', actor, 'INVALID_SOURCE', 'A title and either an accessible URL or pasted excerpt are required.');
@@ -703,7 +932,15 @@ export function createFoundryService(
       const fingerprint = hashText(`${input.title}|${input.url ?? ''}|${input.excerpt ?? ''}`);
       const existing = getWorkspace().sources.find((source) => source.contentHash === fingerprint);
       if (existing) {
-        return { ok: true, data: clone(existing), message: 'The source already exists; no duplicate was created.', modifiedIds: [existing.id] };
+        const workspace = getWorkspace();
+        return {
+          ok: true,
+          data: clone(existing),
+          message: 'The source already exists; no duplicate was created.',
+          modifiedIds: [existing.id],
+          workspaceVersion: workspace.version,
+          nextActions: nextActionsForWorkspace(workspace),
+        };
       }
       return commit('import_source', `Imported ${input.sourceType} source ${input.title}.`, 'Source crate added and ready for extraction.', actor, (workspace) => {
         const id = `source-import-${fingerprint}`;
@@ -853,13 +1090,44 @@ export function createFoundryService(
     },
 
     getEvidenceGaps(actor = 'agent') {
-      return commit('get_evidence_gaps', 'Inspected default quality gates.', 'Returned missing, weak, and contradictory evidence areas.', actor, (workspace) => evidenceGapSnapshot(workspace));
+      void actor;
+      return read(evidenceGapSnapshot(getWorkspace()), 'Returned missing, weak, and contradictory evidence areas.');
+    },
+
+    compareEvidencePolicy(input, actor = 'agent') {
+      void actor;
+      const policy = normalizeEvidencePolicy(input.policy);
+      if (!Number.isInteger(policy.minimumCorroboration) || policy.minimumCorroboration < 1 || policy.minimumCorroboration > 8) {
+        return readFail('INVALID_EVIDENCE_POLICY', 'Minimum corroboration must be an integer from 1 to 8.');
+      }
+      if (policy.earliestPublishedAt && Number.isNaN(Date.parse(policy.earliestPublishedAt))) {
+        return readFail('INVALID_EVIDENCE_POLICY', 'The earliest publication date must be a valid date.');
+      }
+      return read(comparePolicyInWorkspace(getWorkspace(), policy), 'Compared the current recommendation with the proposed evidence policy without changing the workspace.');
+    },
+
+    applyEvidencePolicy(input, actor = 'human') {
+      const policy = normalizeEvidencePolicy(input.policy);
+      if (!Number.isInteger(policy.minimumCorroboration) || policy.minimumCorroboration < 1 || policy.minimumCorroboration > 8) {
+        return fail('apply_evidence_policy', actor, 'INVALID_EVIDENCE_POLICY', 'Minimum corroboration must be an integer from 1 to 8.');
+      }
+      if (policy.earliestPublishedAt && Number.isNaN(Date.parse(policy.earliestPublishedAt))) {
+        return fail('apply_evidence_policy', actor, 'INVALID_EVIDENCE_POLICY', 'The earliest publication date must be a valid date.');
+      }
+      const comparison = comparePolicyInWorkspace(getWorkspace(), policy);
+      return commit('apply_evidence_policy', 'Applied a non-destructive evidence eligibility policy.', comparison.recommendationChanged
+        ? 'Evidence policy applied and the leading recommendation changed.'
+        : 'Evidence policy applied; the leading recommendation remained stable.', actor, (workspace) => {
+        workspace.activeEvidencePolicy = policy;
+        recalculateCandidates(workspace);
+        return comparison;
+      }, () => ['evidence-policy', ...comparison.proposedRanking.map((candidate) => candidate.candidateId)]);
     },
 
     synthesizeInsights(input = {}, actor = 'human') {
       void input;
       const workspace = getWorkspace();
-      const reviewed = workspace.findings.filter(accepted);
+      const reviewed = eligibleFindings(workspace);
       if (reviewed.length < 4) {
         return fail('synthesize_insights', actor, 'INSUFFICIENT_EVIDENCE', 'At least 4 accepted findings are required before synthesis.', { required: { acceptedFindings: 4 }, current: { acceptedFindings: reviewed.length } });
       }
@@ -889,7 +1157,7 @@ export function createFoundryService(
 
     generateIdeaCandidates(input = {}, actor = 'human') {
       const workspace = getWorkspace();
-      const reviewed = workspace.findings.filter(accepted);
+      const reviewed = eligibleFindings(workspace);
       const categories = evidenceCategories(workspace);
       if (reviewed.length < 4 || categories.size < 2) {
         return fail('generate_idea_candidates', actor, 'INSUFFICIENT_EVIDENCE', 'At least 4 accepted findings across 2 evidence categories are required.', {
@@ -926,18 +1194,20 @@ export function createFoundryService(
     },
 
     inspectCandidate(input, actor = 'agent') {
+      void actor;
       const candidate = getWorkspace().candidates.find((item) => item.id === input.candidateId);
-      if (!candidate) return fail('inspect_candidate', actor, 'CANDIDATE_NOT_FOUND', `Candidate ${input.candidateId} does not exist.`);
-      return commit('inspect_candidate', `Inspected ${candidate.name}.`, 'Returned candidate structure, evidence coverage, and unsupported components.', actor, (workspace) => ({
-        candidate: workspace.candidates.find((item) => item.id === input.candidateId)!,
+      if (!candidate) return readFail('CANDIDATE_NOT_FOUND', `Candidate ${input.candidateId} does not exist.`);
+      const workspace = getWorkspace();
+      return read({
+        candidate,
         links: workspace.evidenceLinks.filter((link) => link.candidateId === input.candidateId),
-      }));
+      }, 'Returned candidate structure, evidence coverage, and unsupported components.');
     },
 
     stressTestCandidate(input, actor = 'human') {
       const candidate = getWorkspace().candidates.find((item) => item.id === input.candidateId);
       if (!candidate) return fail('stress_test_candidate', actor, 'CANDIDATE_NOT_FOUND', `Candidate ${input.candidateId} does not exist.`);
-      const counterIds = getWorkspace().findings.filter((finding) => finding.evidenceType === 'counter_evidence' && accepted(finding)).map((finding) => finding.id);
+      const counterIds = eligibleFindings(getWorkspace()).filter((finding) => finding.evidenceType === 'counter_evidence').map((finding) => finding.id);
       if (counterIds.length === 0) return fail('stress_test_candidate', actor, 'COUNTER_EVIDENCE_REQUIRED', 'Search and accept at least one counter-evidence finding before stress testing.');
       return commit('stress_test_candidate', `Attacked ${candidate.name} with contradictions and adoption risks.`, 'Stress chamber recorded counter-evidence, assumptions, and feasibility risks.', actor, (workspace) => {
         const customProblem = !isCuratedDemoProblem(workspace);
@@ -972,11 +1242,12 @@ export function createFoundryService(
       if (!input.instruction.trim()) return fail('revise_candidate', actor, 'REVISION_REQUIRED', 'A concrete revision instruction is required.');
       return commit('revise_candidate', `Revised ${candidate.name}: ${input.instruction}`, 'Candidate updated while preserving evidence lineage.', actor, (workspace) => {
         if (input.excludeEvidenceTypes?.length) {
-          workspace.findings = workspace.findings.map((finding) => input.excludeEvidenceTypes!.includes(finding.evidenceType) ? {
-            ...finding,
-            reviewStatus: 'rejected',
-            reviewNote: `Excluded during candidate revision: ${input.instruction}`,
-          } : finding);
+          const excludedFindingIds = new Set(workspace.findings
+            .filter((finding) => input.excludeEvidenceTypes!.includes(finding.evidenceType))
+            .map((finding) => finding.id));
+          workspace.evidenceLinks = workspace.evidenceLinks.filter((link) => (
+            link.candidateId !== input.candidateId || !excludedFindingIds.has(link.findingId)
+          ));
         }
         workspace.candidates = workspace.candidates.map((item) => item.id === input.candidateId ? {
           ...item,
@@ -996,7 +1267,7 @@ export function createFoundryService(
       const link = workspace.evidenceLinks.find((item) => (
         item.candidateId === input.candidateId
         && item.componentPath === input.componentPath
-        && accepted(workspace.findings.find((finding) => finding.id === item.findingId)!)
+        && findingEligible(workspace, workspace.findings.find((finding) => finding.id === item.findingId)!)
       ));
       if (!link) return fail('trace_evidence', actor, 'EVIDENCE_PATH_NOT_FOUND', `No accepted evidence path supports ${input.componentPath}.`);
       const finding = workspace.findings.find((item) => item.id === link.findingId)!;
@@ -1045,7 +1316,7 @@ export function createFoundryService(
         const links = next.evidenceLinks.filter((link) => link.candidateId === candidate.id);
         const proofFindingIds = [...new Set(links.map((link) => link.findingId))].filter((findingId) => {
           const finding = next.findings.find((item) => item.id === findingId);
-          return finding && accepted(finding) && finding.evidenceType !== 'counter_evidence';
+          return finding && findingEligible(next, finding) && finding.evidenceType !== 'counter_evidence';
         }).slice(0, 5);
         const blueprint: Blueprint = {
           id: 'blueprint-1',
@@ -1078,12 +1349,23 @@ export function createFoundryService(
     exportBlueprint(input, actor = 'human') {
       const workspace = getWorkspace();
       if (!workspace.blueprint) return fail('export_blueprint', actor, 'BLUEPRINT_REQUIRED', 'Finalize a blueprint before exporting it.');
+      const exportSources = workspace.sources.filter((source) => input.includePrivate || !source.private);
+      const exportFindings = workspace.findings.filter((finding) => input.includePrivate || !sourceForFinding(workspace, finding)?.private);
+      const exportFindingIds = new Set(exportFindings.map((finding) => finding.id));
+      const exportLinkIds = new Set(workspace.evidenceLinks
+        .filter((link) => exportFindingIds.has(link.findingId))
+        .map((link) => link.id));
+      const exportBlueprint: Blueprint = input.includePrivate ? workspace.blueprint : {
+        ...workspace.blueprint,
+        proofFindingIds: workspace.blueprint.proofFindingIds.filter((id) => exportFindingIds.has(id)),
+        counterEvidenceIds: workspace.blueprint.counterEvidenceIds.filter((id) => exportFindingIds.has(id)),
+        coreDecisions: workspace.blueprint.coreDecisions.map((decision) => ({
+          ...decision,
+          evidenceLinkIds: decision.evidenceLinkIds.filter((id) => exportLinkIds.has(id)),
+        })),
+      };
       const content = input.format === 'json'
-        ? JSON.stringify({
-          blueprint: workspace.blueprint,
-          sources: workspace.sources.filter((source) => input.includePrivate || !source.private),
-          findings: workspace.findings.filter((finding) => input.includePrivate || !sourceForFinding(workspace, finding)?.private),
-        }, null, 2)
+        ? JSON.stringify({ blueprint: exportBlueprint, sources: exportSources, findings: exportFindings }, null, 2)
         : markdownForBlueprint(workspace, workspace.blueprint, input.includePrivate);
       return commit('export_blueprint', `Exported ${input.format}${input.includePrivate ? ' with approved private evidence' : ' without private evidence'}.`, 'A shareable blueprint export is ready.', actor, () => ({
         filename: `proof-foundry-${workspace.blueprint!.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${input.format === 'json' ? 'json' : 'md'}`,
@@ -1098,7 +1380,14 @@ export function createFoundryService(
         id: 'event-2', actor, toolName: 'reset_workspace', inputSummary: 'Cleared the active workspace.', outputSummary: 'The factory returned to its empty state.', createdAt: now(), workspaceVersion: 1, status: 'success',
       });
       setWorkspace(fresh);
-      return { ok: true, data: clone(fresh), message: 'The factory returned to its empty state.', modifiedIds: [fresh.id] };
+      return {
+        ok: true,
+        data: clone(fresh),
+        message: 'The factory returned to its empty state.',
+        modifiedIds: [fresh.id],
+        workspaceVersion: fresh.version,
+        nextActions: nextActionsForWorkspace(fresh),
+      };
     },
   };
 }

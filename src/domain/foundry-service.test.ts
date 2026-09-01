@@ -26,6 +26,147 @@ function prepareAcceptedEvidence() {
 }
 
 describe('FoundryService', () => {
+  it('ingests a provenance-rich evidence batch atomically in one workspace version', () => {
+    const foundry = createInMemoryFoundry();
+    foundry.service.updateProblemBrief({ problemStatement: 'Libraries need better evidence about digital-skills support.' });
+    const beforeVersion = foundry.getWorkspace().version;
+
+    const result = foundry.service.ingestEvidenceBatch({ items: [
+      {
+        title: 'Library survey', sourceType: 'report', lane: 'customer', url: 'https://evidence.example.org/library-survey',
+        excerpt: 'Older visitors reported difficulty finding support at the moment they needed it.',
+        provenance: { origin: 'public_web', retrievedAt: '2026-08-30T10:00:00.000Z', retrievalMethod: 'browser_agent' },
+      },
+      {
+        title: 'Service log export', sourceType: 'analytics', lane: 'first_party', excerpt: 'Support requests peak after self-service setup fails.', private: true,
+        provenance: { origin: 'connected_private', retrievedAt: '2026-08-30T10:02:00.000Z', retrievalMethod: 'authorized_connector', permissionScope: 'user_authorized' },
+      },
+    ] }, 'agent');
+
+    expect(result).toMatchObject({
+      ok: true,
+      workspaceVersion: beforeVersion + 1,
+      data: { createdIds: expect.any(Array), existingIds: [] },
+    });
+    expect(result.ok && result.data.createdIds).toHaveLength(2);
+    expect(foundry.getWorkspace().sources).toHaveLength(2);
+    expect(foundry.getWorkspace().sources[1]).toMatchObject({
+      private: true,
+      provenance: { origin: 'connected_private', permissionScope: 'user_authorized' },
+    });
+  });
+
+  it('deduplicates batch items and rejects an invalid or unauthorized batch without adding sources', () => {
+    const foundry = createInMemoryFoundry();
+    foundry.service.updateProblemBrief({ problemStatement: 'A decision needs trusted evidence.' });
+    const publicItem = {
+      title: 'Public report', sourceType: 'report' as const, lane: 'market' as const,
+      url: 'https://evidence.example.org/report', excerpt: 'A relevant public finding.',
+      provenance: { origin: 'public_web' as const, retrievedAt: '2026-08-30T10:00:00.000Z', retrievalMethod: 'browser_agent' as const },
+    };
+    const first = foundry.service.ingestEvidenceBatch({ items: [publicItem, publicItem] }, 'agent');
+    expect(first.ok && first.data).toMatchObject({ createdIds: expect.any(Array), existingIds: expect.any(Array) });
+    expect(foundry.getWorkspace().sources).toHaveLength(1);
+
+    const beforeCount = foundry.getWorkspace().sources.length;
+    const rejected = foundry.service.ingestEvidenceBatch({ items: [{
+      title: 'Private export', sourceType: 'analytics', lane: 'first_party', excerpt: 'Private metrics.', private: true,
+      provenance: { origin: 'connected_private', retrievedAt: 'not-an-iso-time', retrievalMethod: 'authorized_connector' },
+    }] }, 'agent');
+
+    expect(rejected).toMatchObject({ ok: false, error: { code: 'EVIDENCE_PERMISSION_REQUIRED' } });
+    expect(foundry.getWorkspace().sources).toHaveLength(beforeCount);
+  });
+
+  it('returns structured gap-closing actions with the lane, evidence type, reason, and suggested tool', () => {
+    const { service } = createInMemoryFoundry();
+    const result = service.getEvidenceGaps();
+
+    expect(result.ok && result.data.nextActions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ lane: expect.any(String), evidenceType: expect.any(String), reason: expect.any(String), suggestedTool: 'ingest_evidence_batch' }),
+    ]));
+  });
+
+  it('compares evidence policies without mutation across source, date, geography, corroboration, and privacy filters', () => {
+    const foundry = prepareAcceptedEvidence();
+    foundry.service.synthesizeInsights({} as never);
+    foundry.service.generateIdeaCandidates({ count: 3 });
+    const before = structuredClone(foundry.getWorkspace());
+
+    const result = foundry.service.compareEvidencePolicy({ policy: {
+      allowedSourceTypes: ['paper', 'report'],
+      earliestPublishedAt: '2025-01-01',
+      geography: 'United States',
+      minimumCorroboration: 2,
+      includePrivate: false,
+    } });
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        proposedPolicy: { allowedSourceTypes: ['paper', 'report'], minimumCorroboration: 2, includePrivate: false },
+        eligibleFindingIds: expect.any(Array),
+        excludedFindingIds: expect.any(Array),
+        proposedRanking: expect.any(Array),
+      },
+    });
+    expect(foundry.getWorkspace()).toEqual(before);
+  });
+
+  it('applies and rolls back a policy without deleting evidence or changing review decisions', () => {
+    const foundry = prepareAcceptedEvidence();
+    foundry.service.synthesizeInsights({} as never);
+    foundry.service.generateIdeaCandidates({ count: 3 });
+    const sourceTypes = ['analytics', 'customer', 'paper', 'report', 'competitor', 'internal'] as const;
+    const baselineRanking = [...foundry.getWorkspace().candidates].sort((a, b) => b.score - a.score).map((candidate) => candidate.id);
+    const statuses = foundry.getWorkspace().findings.map((finding) => finding.reviewStatus);
+    const findingCount = foundry.getWorkspace().findings.length;
+
+    const applied = foundry.service.applyEvidencePolicy({ policy: { allowedSourceTypes: [...sourceTypes], includePrivate: true, minimumCorroboration: 1 } });
+    expect(applied.ok).toBe(true);
+    expect(foundry.getWorkspace().findings).toHaveLength(findingCount);
+    expect(foundry.getWorkspace().findings.map((finding) => finding.reviewStatus)).toEqual(statuses);
+
+    const rolledBack = foundry.service.applyEvidencePolicy({ policy: { includePrivate: true, minimumCorroboration: 1 } });
+    expect(rolledBack.ok).toBe(true);
+    expect([...foundry.getWorkspace().candidates].sort((a, b) => b.score - a.score).map((candidate) => candidate.id)).toEqual(baselineRanking);
+  });
+
+  it('rejects the same invalid publication date for policy comparison and application', () => {
+    const foundry = prepareAcceptedEvidence();
+    foundry.service.synthesizeInsights({} as never);
+    foundry.service.generateIdeaCandidates({ count: 3 });
+    const before = structuredClone(foundry.getWorkspace());
+
+    const compared = foundry.service.compareEvidencePolicy({ policy: { earliestPublishedAt: 'not-a-date', minimumCorroboration: 1, includePrivate: true } });
+    expect(foundry.getWorkspace()).toEqual(before);
+    const applied = foundry.service.applyEvidencePolicy({ policy: { earliestPublishedAt: 'not-a-date', minimumCorroboration: 1, includePrivate: true } });
+
+    expect(compared).toMatchObject({ ok: false, error: { code: 'INVALID_EVIDENCE_POLICY' } });
+    expect(applied).toMatchObject({ ok: false, error: { code: 'INVALID_EVIDENCE_POLICY' } });
+    expect(foundry.getWorkspace().version).toBe(before.version + 1);
+    expect(foundry.getWorkspace().activeEvidencePolicy).toEqual(before.activeEvidencePolicy);
+    expect(foundry.getWorkspace().findings).toEqual(before.findings);
+    expect(foundry.getWorkspace().candidates).toEqual(before.candidates);
+  });
+
+  it('excludes evidence from one candidate revision without changing global human review decisions', () => {
+    const foundry = prepareAcceptedEvidence();
+    foundry.service.synthesizeInsights({} as never);
+    foundry.service.generateIdeaCandidates({ count: 3 });
+    const beforeStatuses = foundry.getWorkspace().findings.map((finding) => [finding.id, finding.reviewStatus]);
+
+    const revised = foundry.service.reviseCandidate({
+      candidateId: 'candidate-a',
+      instruction: 'Recalculate this candidate without primary research.',
+      excludeEvidenceTypes: ['primary_research'],
+    }, 'agent');
+
+    expect(revised.ok).toBe(true);
+    expect(foundry.getWorkspace().findings.map((finding) => [finding.id, finding.reviewStatus])).toEqual(beforeStatuses);
+    const excludedIds = new Set(foundry.getWorkspace().findings.filter((finding) => finding.evidenceType === 'primary_research').map((finding) => finding.id));
+    expect(foundry.getWorkspace().evidenceLinks.filter((link) => link.candidateId === 'candidate-a').every((link) => !excludedIds.has(link.findingId))).toBe(true);
+  });
   it('starts empty and moves to a defined problem while recording the actor and version', () => {
     const foundry = createInMemoryFoundry();
 
@@ -39,6 +180,10 @@ describe('FoundryService', () => {
     }, 'human');
 
     expect(result.ok).toBe(true);
+    expect(result).toMatchObject({
+      workspaceVersion: 2,
+      nextActions: expect.arrayContaining(['plan_research']),
+    });
     expect(foundry.getWorkspace()).toMatchObject({ stage: 'PROBLEM_DEFINED', version: 2 });
     expect(foundry.getWorkspace().activity.at(-1)).toMatchObject({
       actor: 'human',
@@ -70,8 +215,10 @@ describe('FoundryService', () => {
 
     const result = service.generateIdeaCandidates({ count: 3 });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       ok: false,
+      workspaceVersion: 2,
+      nextActions: expect.arrayContaining(['update_problem_brief']),
       error: {
         code: 'INSUFFICIENT_EVIDENCE',
         message: 'At least 4 accepted findings across 2 evidence categories are required.',
@@ -79,6 +226,26 @@ describe('FoundryService', () => {
         current: { acceptedFindings: 0, evidenceCategories: 0 },
       },
     });
+  });
+
+  it('keeps state inspection and evidence-gap reads genuinely non-mutating', () => {
+    const foundry = prepareAcceptedEvidence();
+    foundry.service.synthesizeInsights({} as never);
+    foundry.service.generateIdeaCandidates({ count: 3 });
+    const before = structuredClone(foundry.getWorkspace());
+
+    const state = foundry.service.getFoundryState('agent');
+    const gaps = foundry.service.getEvidenceGaps('agent');
+    const candidate = foundry.service.inspectCandidate({ candidateId: 'candidate-a' }, 'agent');
+
+    expect(foundry.getWorkspace()).toEqual(before);
+    for (const result of [state, gaps, candidate]) {
+      expect(result).toMatchObject({
+        ok: true,
+        workspaceVersion: before.version,
+        nextActions: expect.any(Array),
+      });
+    }
   });
 
   it('keeps research planning and seeded source search idempotent', () => {
@@ -241,6 +408,34 @@ describe('FoundryService', () => {
     expect(foundry.getWorkspace().stage).toBe('FINALIZED');
   });
 
+  it('omits private counter-evidence from public-safe Markdown exports', () => {
+    const foundry = prepareAcceptedEvidence();
+    const privateCounter = foundry.getWorkspace().findings.find((finding) => finding.evidenceType === 'counter_evidence');
+    expect(privateCounter).toBeDefined();
+    const privateSource = foundry.getWorkspace().sources.find((source) => source.id === privateCounter?.sourceId);
+    expect(privateSource).toBeDefined();
+    privateSource!.private = true;
+    privateSource!.accessMode = 'private';
+
+    foundry.service.synthesizeInsights({} as never);
+    foundry.service.generateIdeaCandidates({ count: 3 });
+    foundry.service.stressTestCandidate({ candidateId: 'candidate-a' });
+    foundry.service.finalizeBlueprint({ candidateId: 'candidate-a' });
+    const exported = foundry.service.exportBlueprint({ format: 'markdown', includePrivate: false });
+    const jsonExport = foundry.service.exportBlueprint({ format: 'json', includePrivate: false });
+
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.data.content).not.toContain(privateCounter!.normalizedClaim);
+    expect(exported.data.content).not.toContain(privateCounter!.citation.sourceTitle);
+    expect(jsonExport.ok).toBe(true);
+    if (!jsonExport.ok) return;
+    expect(jsonExport.data.content).not.toContain(privateCounter!.id);
+    expect(jsonExport.data.content).not.toContain(privateCounter!.sourceId);
+    const privateLinkIds = foundry.getWorkspace().evidenceLinks.filter((link) => link.findingId === privateCounter!.id).map((link) => link.id);
+    for (const linkId of privateLinkIds) expect(jsonExport.data.content).not.toContain(linkId);
+  });
+
   it('returns a fresh independent workspace object for resets', () => {
     const one = createInitialWorkspace();
     const two = createInitialWorkspace();
@@ -260,7 +455,7 @@ describe('FoundryService', () => {
     });
     const sourceId = imported.ok ? imported.data.id : 'missing';
 
-    expect(foundry.service.extractFindings({ sourceIds: [sourceId] })).toEqual({
+    expect(foundry.service.extractFindings({ sourceIds: [sourceId] })).toMatchObject({
       ok: false,
       error: {
         code: 'NO_EXACT_PASSAGE',

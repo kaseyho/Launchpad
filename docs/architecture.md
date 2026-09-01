@@ -10,7 +10,7 @@ EMPTY → PROBLEM_DEFINED → RESEARCH_PLANNED → SOURCING
       → STRESS_TESTING → FINALIZED
 ```
 
-`FoundryService` is the only layer allowed to perform a domain transition. Human controls and WebMCP handlers receive the same service object, so agent activity is neither simulated nor stored in a parallel state. Every successful or rejected operation updates the visible activity log with actor, tool, version, summary, timestamp, and status.
+`FoundryService` is the only layer allowed to perform a domain transition. Human controls and WebMCP handlers receive the same service object, so agent activity is neither simulated nor stored in a parallel state. Every committed operation and rejected write updates the visible activity log with actor, tool, version, summary, timestamp, and status. Pure reads—including invalid read requests—never change the workspace version or Activity.
 
 ## Evidence-to-decision graph
 
@@ -47,17 +47,21 @@ The first viewport keeps three responsibilities distinct: the launch brief defin
 
 ## WebMCP boundary
 
-The 17 tools register from the top-level client page through `document.modelContext.registerTool`. `research_and_ideate` mirrors the product’s complete autonomous run, including the server-side AI/web-search request; the other 16 expose its underlying state and operations. WebMCP is the control plane, not a second research implementation. Each tool:
+The top-level client registers only the tools useful at the current stage through `document.modelContext.registerTool`. A registration lifetime owns an `AbortSignal`; the UI reports readiness only after all asynchronous registrations succeed, disposes the prior surface on stage changes, and propagates execution cancellation into long-running research. WebMCP is an evidence mission over the same domain service, not a second research implementation. Each tool:
 
 - has a narrow JSON schema with `additionalProperties: false`;
 - operates only on the active anonymous workspace;
-- calls one domain service method;
+- calls the shared domain service or composes its pure previews;
 - declares side effects in its description;
-- returns success state, modified IDs, and enough data to verify the operation;
+- returns a bounded receipt with workspace version, modified IDs, next actions, and compact verification data;
 - returns structured errors rather than masking a failed state gate;
 - never returns secrets, raw credentials, or storage bindings.
 
-Read tools use `readOnlyHint`. They still add an audit event so the shared page shows that an agent inspected state, but they do not change research decisions.
+Read tools use `readOnlyHint` and do not change version, timestamps, active tool, or activity. Evidence-returning tools use `untrustedContentHint`. Evidence batches validate every record before one atomic commit and retain origin, retrieval method, retrieval time, permission scope, and deduplication fingerprint.
+
+Evidence policies are eligibility filters over the complete ledger. A comparison clones and recalculates candidate coverage without mutation. Applying a policy stores the filter and reranks candidates while preserving every finding and review decision, so rollback is lossless.
+
+Evidence review, finalization, and private export are preview/commit operations. Their commit tools open an in-page consent dialog listing exact IDs, privacy scope, and workspace version. Approval comes only from the human button; decline, abort, or a stale version leaves domain state unchanged.
 
 ## Persistence and uploads
 
@@ -73,7 +77,7 @@ AI-produced findings are stored as conservative, citation-linked syntheses with 
 
 ## Public/private evidence
 
-Sources carry both `accessMode` and `private` fields. The seeded GA4 and support evidence is disclosed synthetic private data. The default blueprint export filters out private sources and findings. Including private evidence is an explicit opt-in argument on `export_blueprint`.
+Sources carry `accessMode`, `private`, and optional provenance fields. The seeded GA4 and support evidence is disclosed synthetic private data. Public-safe exports filter out private sources and findings. A private-inclusive export requires an explicit argument plus a visible human-consent checkpoint.
 
 ## Deterministic demo strategy
 

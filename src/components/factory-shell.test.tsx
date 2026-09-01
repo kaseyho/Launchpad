@@ -1,16 +1,22 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act } from 'react';
+import { renderToString } from 'react-dom/server';
+import { hydrateRoot, type Root } from 'react-dom/client';
 import { FactoryShell } from './factory-shell';
-import { createInitialWorkspace } from '../domain/foundry-service';
+import { createInMemoryFoundry, createInitialWorkspace } from '../domain/foundry-service';
 import { createSubscriptionState, DEFAULT_PLAN_QUOTES, SUBSCRIPTION_STORAGE_KEY } from '../subscription/subscription';
+import type { WebMCPToolDefinition } from '../webmcp/register-tools';
 
 const CUSTOM_PROBLEM = 'Independent restaurants lose new staff during first-week training because guidance is inconsistent across managers.';
+const TYPO_PROBLEM = 'Independent restuarants lose new staff during first-week training because guidance is inconsistent across managers.';
 
-function researchReport() {
+function researchReport(normalizedProblem = CUSTOM_PROBLEM) {
   return {
     status: 'complete',
     questions: [],
+    normalized_problem: normalizedProblem,
     target_audience: 'New restaurant staff and the managers training them',
     desired_outcome: 'Improve first-week task confidence and reduce avoidable staff drop-off',
     recommendation: {
@@ -33,8 +39,8 @@ function researchReport() {
   };
 }
 
-function mockAIResearch() {
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(researchReport()), {
+function mockAIResearch(normalizedProblem = CUSTOM_PROBLEM) {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(researchReport(normalizedProblem)), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   })));
@@ -43,7 +49,28 @@ function mockAIResearch() {
 afterEach(() => {
   vi.unstubAllGlobals();
   Object.defineProperty(window, 'localStorage', { configurable: true, value: undefined });
+  Reflect.deleteProperty(document, 'modelContext');
 });
+
+function createStressTestedWorkspace() {
+  const foundry = createInMemoryFoundry();
+  foundry.service.updateProblemBrief({
+    problemStatement: 'A mid-market B2B SaaS product loses new administrators during setup.',
+    targetAudience: 'New administrators at mid-market B2B SaaS customers',
+    desiredOutcome: 'Improve first-session activation',
+    timeframe: 'Six weeks',
+  });
+  foundry.service.planResearch({ focus: 'first-session activation' });
+  for (const lane of ['first_party', 'customer', 'academic', 'market', 'community', 'counter'] as const) {
+    foundry.service.searchSources({ lane });
+  }
+  foundry.service.extractFindings({});
+  foundry.service.reviewFindings({ decision: 'accept', findingIds: foundry.getWorkspace().findings.map((finding) => finding.id) });
+  foundry.service.synthesizeInsights({} as never);
+  foundry.service.generateIdeaCandidates({ count: 3 });
+  foundry.service.stressTestCandidate({ candidateId: 'candidate-a' });
+  return structuredClone(foundry.getWorkspace());
+}
 
 function installSubscriptionStorage(value: string | null) {
   const values = new Map<string, string>();
@@ -58,6 +85,30 @@ function installSubscriptionStorage(value: string | null) {
 }
 
 describe('FactoryShell autonomous workflow', () => {
+  it('hydrates with persisted subscription data without changing the server snapshot', async () => {
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: undefined });
+    const serverHTML = renderToString(<FactoryShell />);
+    const saved = createSubscriptionState(DEFAULT_PLAN_QUOTES.builder, new Date('2026-08-31T00:00:00.000Z'));
+    installSubscriptionStorage(JSON.stringify(saved));
+    const container = document.createElement('div');
+    container.innerHTML = serverHTML;
+    document.body.appendChild(container);
+    const hydrationErrors: unknown[][] = [];
+    const consoleError = vi.spyOn(console, 'error').mockImplementation((...args) => { hydrationErrors.push(args); });
+    let root: Root | undefined;
+
+    await act(async () => {
+      root = hydrateRoot(container, <FactoryShell />);
+      await Promise.resolve();
+    });
+
+    expect(hydrationErrors.flat().join(' ')).not.toMatch(/hydration failed|hydration mismatch/i);
+    await waitFor(() => expect(container).toHaveTextContent(/builder · 40\/40/i));
+    await act(async () => root?.unmount());
+    consoleError.mockRestore();
+    container.remove();
+  });
+
   it('requires only one problem statement and keeps WebMCP optional', async () => {
     const user = userEvent.setup();
     render(<FactoryShell />);
@@ -68,7 +119,7 @@ describe('FactoryShell autonomous workflow', () => {
     expect(screen.getByText(/no api key, source hunting, or manual research workflow/i)).toBeVisible();
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/input open/i);
     expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/output empty/i);
-    expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/optional agent control/i);
+    expect(screen.getByLabelText(/webmcp agent run/i)).toHaveTextContent(/browser evidence mission/i);
     expect(screen.queryByRole('dialog', { name: /activity/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: /set your research capacity/i })).not.toBeInTheDocument();
 
@@ -85,10 +136,10 @@ describe('FactoryShell autonomous workflow', () => {
     const user = userEvent.setup();
     render(<FactoryShell />);
 
-    await user.type(screen.getByRole('textbox', { name: /what problem should launchpad solve/i }), CUSTOM_PROBLEM);
+    await user.type(screen.getByRole('textbox', { name: /what problem should launchpad solve/i }), TYPO_PROBLEM);
     await user.click(screen.getByRole('button', { name: /research this problem/i }));
 
-    expect(await screen.findByText(CUSTOM_PROBLEM)).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('textbox', { name: /interpreted problem/i })).toHaveValue(CUSTOM_PROBLEM));
     expect(await screen.findByRole('heading', { name: /one solution. every claim traceable/i }, { timeout: 5000 })).toBeVisible();
     expect(screen.getByRole('region', { name: /evidence-backed solution/i })).toBeVisible();
     expect(screen.getByRole('heading', { name: /first-week training guide/i })).toBeVisible();
@@ -102,8 +153,34 @@ describe('FactoryShell autonomous workflow', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /plans/i })).toHaveTextContent(/explorer · 2\/3/i));
   }, 8000);
 
+  it('shows a completed run after WebMCP finalizes a previously interrupted workspace', async () => {
+    const registered = new Map<string, WebMCPToolDefinition>();
+    Object.defineProperty(document, 'modelContext', {
+      configurable: true,
+      value: { registerTool: (definition: WebMCPToolDefinition) => { registered.set(definition.name, definition); } },
+    });
+    const user = userEvent.setup();
+    render(<FactoryShell initialWorkspace={createStressTestedWorkspace()} />);
+
+    await waitFor(() => expect(registered.has('finalize_blueprint_with_consent')).toBe(true));
+    expect(await screen.findByRole('heading', { name: /research run paused/i })).toBeVisible();
+    const finalize = registered.get('finalize_blueprint_with_consent')!;
+    const version = createStressTestedWorkspace().version;
+    let pending: ReturnType<WebMCPToolDefinition['execute']>;
+    await act(async () => {
+      pending = finalize.execute({ candidate_id: 'candidate-a', expected_workspace_version: version });
+      await Promise.resolve();
+    });
+    await user.click(await screen.findByRole('button', { name: /approve agent action/i }));
+    await act(async () => { await pending; });
+
+    expect(await screen.findByRole('heading', { name: /one solution. every claim traceable/i })).toBeVisible();
+    expect(screen.getByRole('region', { name: /interactive research factory/i })).toHaveTextContent(/problem processed/i);
+  });
+
   it('lets a paused run edit the problem and retry with the new brief', async () => {
-    mockAIResearch();
+    const replacementProblem = 'A broader replacement brief gives the research run enough context to find mixed public evidence.';
+    mockAIResearch(replacementProblem);
     const user = userEvent.setup();
     const initialWorkspace = createInitialWorkspace();
     initialWorkspace.stage = 'PROBLEM_DEFINED';
@@ -111,14 +188,14 @@ describe('FactoryShell autonomous workflow', () => {
     render(<FactoryShell initialWorkspace={initialWorkspace} />);
 
     expect(await screen.findByRole('heading', { name: /research run paused/i })).toBeVisible();
-    const problem = screen.getByRole('textbox', { name: /problem submitted/i });
+    const problem = screen.getByRole('textbox', { name: /interpreted problem/i });
     expect(problem).toBeEnabled();
     await user.clear(problem);
-    await user.type(problem, 'A broader replacement brief gives the research run enough context to find mixed public evidence.');
+    await user.type(problem, replacementProblem);
     await user.click(screen.getByRole('button', { name: /save & retry research/i }));
 
     expect(await screen.findByRole('heading', { name: /one solution. every claim traceable/i }, { timeout: 5000 })).toBeVisible();
-    expect(screen.getByRole('textbox', { name: /problem submitted/i })).toHaveValue('A broader replacement brief gives the research run enough context to find mixed public evidence.');
+    expect(screen.getByRole('textbox', { name: /interpreted problem/i })).toHaveValue(replacementProblem);
   }, 8000);
 
   it('enforces the configured allowance before starting human or agent research', async () => {

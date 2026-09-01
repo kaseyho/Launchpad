@@ -1,5 +1,5 @@
 import type { FoundryService } from '../domain/foundry-service';
-import type { Actor, FoundryWorkspace, IdeaCandidateProposal, ServiceResult, SourceLane } from '../domain/types';
+import type { Actor, AgentConsentRequest, FoundryWorkspace, IdeaCandidateProposal, ServiceResult, SourceLane } from '../domain/types';
 
 export type AutonomousResearchPhase =
   | 'idle'
@@ -31,11 +31,13 @@ interface RunAutonomousResearchOptions {
   onProgress?: (progress: AutonomousResearchProgress) => void;
   pause?: () => Promise<void>;
   actor?: Actor;
+  requestAgentConsent?: (request: AgentConsentRequest, signal?: AbortSignal) => Promise<boolean>;
 }
 
 export interface GroundedResearchReport {
   status: 'complete';
   questions: string[];
+  normalized_problem: string;
   target_audience: string;
   desired_outcome: string;
   recommendation: {
@@ -59,6 +61,7 @@ export interface GroundedResearchReport {
 interface ClarificationResponse {
   status: 'needs_clarification';
   questions: string[];
+  normalized_problem: string;
 }
 
 interface ResearchErrorResponse {
@@ -103,10 +106,20 @@ export async function runAutonomousResearch({
   onProgress = () => {},
   pause = () => Promise.resolve(),
   actor = 'human',
+  requestAgentConsent,
 }: RunAutonomousResearchOptions) {
   const update = async (phase: AutonomousResearchPhase, progress: number, message: string) => {
     onProgress({ phase, progress, message });
     await pause();
+  };
+  const requireAgentConsent = async (request: Omit<AgentConsentRequest, 'workspaceVersion'>) => {
+    if (actor !== 'agent') return;
+    if (!requestAgentConsent) throw new Error('The in-page human consent checkpoint is unavailable for this agent run.');
+    const expectedVersion = getWorkspace().version;
+    const approved = await requestAgentConsent({ ...request, workspaceVersion: expectedVersion }, signal);
+    if (!approved) throw new Error('The human did not approve the requested agent action; completed work remains unchanged.');
+    if (signal?.aborted) throw signal.reason ?? new DOMException('The agent run was cancelled.', 'AbortError');
+    if (getWorkspace().version !== expectedVersion) throw new Error('The workspace changed during consent. Read the current state and retry.');
   };
   await update('planning', 8, 'Giving the problem to the AI research agent and checking whether it is answerable.');
   const response = await fetcher('/api/research', {
@@ -131,7 +144,7 @@ export async function runAutonomousResearch({
   }
 
   requireResult(service.updateProblemBrief({
-    problemStatement: problem,
+    problemStatement: report.normalized_problem,
     targetAudience: report.target_audience,
     desiredOutcome: report.desired_outcome,
     timeframe: 'A focused pilot within four to six weeks',
@@ -156,6 +169,15 @@ export async function runAutonomousResearch({
   await update('extracting', 48, `Turning ${report.sources.length} cited web findings into traceable evidence records.`);
   const sourceIds = getWorkspace().sources.map((source) => source.id);
   const findings = requireResult<FoundryWorkspace['findings']>(service.extractFindings({ sourceIds }, 'system'));
+  await requireAgentConsent({
+    kind: 'review_evidence',
+    title: 'Qualify browser-researched evidence?',
+    summary: `The browser agent wants to qualify ${findings.length} exact findings before synthesis.`,
+    affectedIds: findings.map((finding) => finding.id),
+    privacyScope: findings.some((finding) => getWorkspace().sources.find((source) => source.id === finding.sourceId)?.private)
+      ? 'includes_private'
+      : 'public_only',
+  });
   requireResult(service.reviewFindings({
     decision: 'qualify',
     findingIds: findings.map((finding) => finding.id),
@@ -173,6 +195,13 @@ export async function runAutonomousResearch({
 
   await update('stress_testing', 92, 'Testing the solution against limitations and transfer risks.');
   requireResult(service.stressTestCandidate({ candidateId: selected.id }, 'system'));
+  await requireAgentConsent({
+    kind: 'finalize_blueprint',
+    title: 'Finalize this evidence-backed blueprint?',
+    summary: 'Finalization locks the selected recommendation and validation plan into the visible workspace.',
+    affectedIds: [selected.id],
+    privacyScope: getWorkspace().sources.some((source) => source.private) ? 'includes_private' : 'public_only',
+  });
   const blueprint = requireResult(service.finalizeBlueprint({ candidateId: selected.id }, 'system'));
 
   await update('complete', 100, 'Your evidence-backed solution is ready.');

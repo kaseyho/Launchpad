@@ -1,0 +1,40 @@
+{
+  "plugin": "devpost-hackathon",
+  "version": 2,
+  "hackathon": {
+    "slug": "webmcp",
+    "name": "The WebMCP Challenge",
+    "url": "https://webmcp.devpost.com",
+    "selected": true,
+    "source": "known"
+  },
+  "participant": {
+    "name": "Kei Ching Ho",
+    "display_name": "Kei Ching Ho"
+  },
+  "project": {
+    "name": "LaunchPad",
+    "summary": "A WebMCP-native evidence factory where browser agents research, challenge, and trace one defensible solution while humans retain control of sensitive decisions.",
+    "ai_usage": "ChatGPT's in-app browser tested the live WebMCP journey; an OpenAI-compatible Responses API powers autonomous web research and provider-backed tool-selection evals.",
+    "codex_usage": "Codex analyzed and strengthened the architecture, implemented and tested the WebMCP protocol, verified the public deployment, and prepared the submission evidence."
+  },
+  "current_stage": "prepare-submission",
+  "completed_stages": [
+    "start-hackathon",
+    "review",
+    "resources"
+  ],
+  "rules_acknowledged": true,
+  "learning": {
+    "status": "not-started",
+    "current_step": "",
+    "completed_steps": [],
+    "plan_file": "",
+    "checklist_file": ""
+  },
+  "submission": {
+    "draft_file": "devpost-submission.md",
+    "status": "drafting"
+  },
+  "next_command": "prepare-submission"
+}

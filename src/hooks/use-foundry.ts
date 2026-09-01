@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createFoundryService, createInitialWorkspace, type FoundryService } from '../domain/foundry-service';
-import type { Actor, FoundryWorkspace, ServiceFailure, ServiceSuccess, TraceNode } from '../domain/types';
+import type { Actor, AgentConsentRequest, FoundryWorkspace, ServiceFailure, ServiceSuccess, TraceNode } from '../domain/types';
 import { isAbortError, loadLocalWorkspace, saveWorkspaceSnapshot } from '../persistence/client-workspace';
 import { runAutonomousResearch, type AutonomousResearchProgress } from '../research/autonomous-research';
 
@@ -102,10 +102,12 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
   }, [persistenceReady, workspace]);
 
   useEffect(() => {
-    if (!persistenceReady || researchRun.phase !== 'idle') return;
+    if (!persistenceReady || runAbortRef.current) return;
     if (workspace.stage === 'FINALIZED') {
-      queueMicrotask(() => setResearchRun({ phase: 'complete', progress: 100, message: 'Your evidence-backed solution is ready.' }));
-    } else if (workspace.stage !== 'EMPTY') {
+      if (researchRun.phase !== 'complete') {
+        queueMicrotask(() => setResearchRun({ phase: 'complete', progress: 100, message: 'Your evidence-backed solution is ready.' }));
+      }
+    } else if (researchRun.phase === 'idle' && workspace.stage !== 'EMPTY') {
       queueMicrotask(() => setResearchRun({
         phase: 'error',
         progress: 0,
@@ -134,8 +136,14 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
     return false;
   }, [allowance]);
 
-  const startResearch = useCallback(async (problemStatement?: string, actor: Actor = 'human') => {
+  const startResearch = useCallback(async (
+    problemStatement?: string,
+    actor: Actor = 'human',
+    executionSignal?: AbortSignal,
+    requestAgentConsent?: (request: AgentConsentRequest, signal?: AbortSignal) => Promise<boolean>,
+  ) => {
     if (runAbortRef.current) return false;
+    if (executionSignal?.aborted) return false;
     const problem = problemStatement?.trim() || controller.getSnapshot().problemBrief.problemStatement.trim();
     if (!problem) {
       setResearchRun({ phase: 'error', progress: 0, message: 'A problem statement is required.', error: 'Enter the problem you want LaunchPad to research.' });
@@ -143,6 +151,8 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
     }
     if (!checkAllowance()) return false;
     const abortController = new AbortController();
+    const forwardExecutionAbort = () => abortController.abort(executionSignal?.reason);
+    executionSignal?.addEventListener('abort', forwardExecutionAbort, { once: true });
     runAbortRef.current = abortController;
     setTraceNodes([]);
     setLastExport(undefined);
@@ -154,6 +164,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
         getWorkspace: controller.getSnapshot,
         signal: abortController.signal,
         actor,
+        requestAgentConsent,
         onProgress: (progress) => {
           setResearchRun(progress);
           setNotice(progress.message);
@@ -177,6 +188,7 @@ export function useFoundry(initialWorkspace?: FoundryWorkspace, allowance?: Rese
       }
       return false;
     } finally {
+      executionSignal?.removeEventListener('abort', forwardExecutionAbort);
       runAbortRef.current = undefined;
     }
   }, [allowance, checkAllowance, controller, service]);

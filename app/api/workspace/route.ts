@@ -1,4 +1,5 @@
 import { deleteWorkspace, loadWorkspace, saveWorkspace } from '../../../db/storage';
+import { WORKSPACE_COOKIE_NAME } from '../../../src/persistence/workspace-identity';
 import { decodeWorkspaceSnapshot } from '../../../src/persistence/workspace-snapshot';
 
 export const runtime = 'edge';
@@ -13,12 +14,12 @@ function storageIdentity(request: Request) {
   const existing = request.headers.get('cookie')
     ?.split(';')
     .map((part) => part.trim())
-    .find((part) => part.startsWith('pf_workspace='))
-    ?.slice('pf_workspace='.length);
+    .find((part) => part.startsWith(`${WORKSPACE_COOKIE_NAME}=`))
+    ?.slice(`${WORKSPACE_COOKIE_NAME}=`.length);
   if (existing && /^workspace-[a-f0-9-]{36}$/.test(existing)) return { id: existing };
   const id = `workspace-${crypto.randomUUID()}`;
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
-  return { id, cookie: `pf_workspace=${id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}` };
+  return { id, cookie: `${WORKSPACE_COOKIE_NAME}=${id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}` };
 }
 
 export async function GET(request: Request) {

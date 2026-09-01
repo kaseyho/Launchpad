@@ -12,6 +12,7 @@ function groundedReport({
   return {
     status: 'complete' as const,
     questions: [],
+    normalized_problem: 'Hospital porters face preventable safety risks because shift handoffs are inconsistent.',
     target_audience: 'Hospital porters working across shift changes',
     desired_outcome: 'Reduce preventable handoff omissions and safety incidents',
     recommendation: {
@@ -40,6 +41,7 @@ describe('autonomous LaunchPad research', () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({
       status: 'complete',
       questions: [],
+      normalized_problem: 'How to find the cheapest flight booking',
       target_audience: 'Travelers who can compare dates and booking channels',
       desired_outcome: 'Minimize the total payable airfare without hiding baggage or booking fees',
       recommendation: {
@@ -62,7 +64,7 @@ describe('autonomous LaunchPad research', () => {
     }), { status: 200, headers: { 'content-type': 'application/json' } }));
 
     const blueprint = await runAutonomousResearch({
-      problem: 'find cheapest flight price booking',
+      problem: 'hwo to find cheapest flight booking',
       service: foundry.service,
       getWorkspace: foundry.getWorkspace,
       fetcher,
@@ -71,10 +73,11 @@ describe('autonomous LaunchPad research', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(fetcher).toHaveBeenCalledWith('/api/research', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ problem: 'find cheapest flight price booking' }),
+      body: JSON.stringify({ problem: 'hwo to find cheapest flight booking' }),
     }));
     expect(blueprint.name).toBe('Fare Search Playbook');
     expect(blueprint.mechanism).toContain('total trip cost');
+    expect(foundry.getWorkspace().problemBrief.problemStatement).toBe('How to find the cheapest flight booking');
     expect(foundry.getWorkspace().findings.map((finding) => finding.normalizedClaim).join(' ')).not.toMatch(/mindfulness|oil products/i);
   });
 
@@ -120,5 +123,45 @@ describe('autonomous LaunchPad research', () => {
 
     expect(blueprint.status).toBe('finalized');
     expect(foundry.getWorkspace().sources.every((source) => source.sourceType === 'community')).toBe(true);
+  });
+
+  it('requires explicit evidence-review and finalization consent for an agent-started autonomous run', async () => {
+    const foundry = createInMemoryFoundry();
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(groundedReport()), { status: 200, headers: { 'content-type': 'application/json' } }));
+    const requests: Array<{ kind: string; affectedIds: string[]; workspaceVersion: number }> = [];
+
+    const blueprint = await runAutonomousResearch({
+      problem: 'Hospital porters face preventable safety risks because shift handoffs are inconsistent.',
+      service: foundry.service,
+      getWorkspace: foundry.getWorkspace,
+      fetcher,
+      actor: 'agent',
+      requestAgentConsent: async (request) => {
+        requests.push(request);
+        return true;
+      },
+    });
+
+    expect(requests.map((request) => request.kind)).toEqual(['review_evidence', 'finalize_blueprint']);
+    expect(requests[0].affectedIds).toEqual(foundry.getWorkspace().findings.map((finding) => finding.id));
+    expect(requests[0].workspaceVersion).toBeLessThan(requests[1].workspaceVersion);
+    expect(blueprint.status).toBe('finalized');
+  });
+
+  it('leaves extracted findings pending when an agent run has no consent broker', async () => {
+    const foundry = createInMemoryFoundry();
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(groundedReport()), { status: 200, headers: { 'content-type': 'application/json' } }));
+
+    await expect(runAutonomousResearch({
+      problem: 'Hospital porters face preventable safety risks because shift handoffs are inconsistent.',
+      service: foundry.service,
+      getWorkspace: foundry.getWorkspace,
+      fetcher,
+      actor: 'agent',
+    })).rejects.toThrow(/consent checkpoint is unavailable/i);
+
+    expect(foundry.getWorkspace().findings).not.toHaveLength(0);
+    expect(foundry.getWorkspace().findings.every((finding) => finding.reviewStatus === 'pending')).toBe(true);
+    expect(foundry.getWorkspace().blueprint).toBeUndefined();
   });
 });

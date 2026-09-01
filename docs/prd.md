@@ -1226,17 +1226,22 @@ The high-level tool proves WebMCP can operate the product as intended. The narro
 |`plan_research`|Write|Creates structured research questions and proposed source lanes|Planner station activates|
 |`search_sources`|Write|Searches approved source adapters for one research question|Source crates enter factory|
 |`import_source`|Write|Adds a URL, pasted excerpt, uploaded document, or connected-data result|New crate appears|
+|`ingest_evidence_batch`|Write|Atomically adds up to eight provenance- and privacy-stamped records|A validated evidence batch enters the factory|
 |`extract_findings`|Write|Extracts structured findings from selected sources|Findings move into Evidence Smelter|
-|`review_findings`|Write|Accepts, rejects, qualifies, or labels findings|Crates move to accepted, rejected, or caution lanes|
+|`review_evidence_with_consent`|Write + consent|Previews exact finding IDs and pauses for version-bound approval before review|Consent dialog appears, then crates move only after approval|
 |`get_evidence_gaps`|Read|Returns missing, weak, concentrated, or contradictory evidence areas|Gap indicators highlight|
+|`compare_evidence_policy`|Read|Compares a counterfactual source, recency, geography, corroboration, and privacy policy|Policy impact is inspectable without mutation|
+|`apply_evidence_policy`|Write|Applies the inspected policy non-destructively|Coverage and ranking recalculate while the ledger remains intact|
 |`synthesize_insights`|Write|Clusters accepted findings into opportunity themes|Insight modules assemble|
 |`generate_idea_candidates`|Write|Creates one to three candidates using selected insights and constraints|Idea bays populate|
 |`inspect_candidate`|Read|Returns candidate structure, evidence coverage, and unsupported components|Candidate opens|
 |`stress_test_candidate`|Write|Searches contradictions, assumptions, alternatives, and risks|Stress chamber activates|
 |`revise_candidate`|Write|Revises a candidate while preserving evidence lineage|Blueprint changes visually|
 |`trace_evidence`|Read|Returns the complete proof path for an idea component|Source-to-feature graph highlights|
-|`finalize_blueprint`|Write|Locks the chosen candidate into a final blueprint version|Blueprint printer activates|
-|`export_blueprint`|Write|Produces a shareable report|Export link appears|
+|`preview_finalization`|Read|Returns remaining gates and the workspace version required for commit|Finalization readiness is inspectable|
+|`finalize_blueprint_with_consent`|Write + consent|Pauses for exact, version-bound approval before locking the candidate|Consent dialog appears, then the blueprint printer activates|
+|`preview_export`|Read|Previews a public-safe or private-inclusive export|Export scope and version are inspectable|
+|`export_blueprint_with_consent`|Write + conditional consent|Produces a public-safe report directly; private-inclusive export pauses for consent|The full file appears in the visible download surface|
 
 ## Tool design requirements
 
@@ -1268,14 +1273,25 @@ Every tool must:
 ## Recommended demo tool sequence
 
 ```text
-research_and_ideate
 get_foundry_state
+update_problem_brief
+plan_research
+ingest_evidence_batch
+extract_findings
+review_evidence_with_consent
+get_evidence_gaps
+compare_evidence_policy
+apply_evidence_policy
 inspect_candidate
 trace_evidence
-export_blueprint
+stress_test_candidate
+preview_finalization
+finalize_blueprint_with_consent
+preview_export
+export_blueprint_with_consent
 ```
 
-The first call runs the real product. The read calls then verify the completed state and its source lineage. Judges can also invoke the narrow write tools individually to demonstrate composability.
+The sequence demonstrates a true hybrid agent workflow: pure live reads, atomic browser-found evidence ingestion, visible human judgment, counterfactual policy analysis, reversible policy application, proof tracing, and preview/commit boundaries for sensitive actions.
 
 ## Registration requirement
 
@@ -2571,7 +2587,7 @@ Narration:
 
 > “Teams do not lack information. They lack a visible path from information to decision. LaunchPad turns scattered evidence into an idea you can defend. This factory reflects the real research state.”
 
-Point out the loop: the browser agent reads this workspace, calls one of 16 typed tools, and the same page updates. Copy the prepared demo prompt.
+Point out the loop: the browser agent reads this workspace, uses a stage-relevant surface drawn from 22 typed tools, and the same page updates. Copy the prepared demo prompt.
 
 ## 0:20–0:50 — WebMCP moves the product
 

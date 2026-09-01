@@ -15,6 +15,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "test": "vitest run",
     "test:watch": "vitest",
+    "eval:webmcp": "node --import tsx scripts/run-webmcp-evals.mjs",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

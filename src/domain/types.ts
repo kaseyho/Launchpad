@@ -36,6 +36,15 @@ export type QualityLevel = 'strong' | 'moderate' | 'weak' | 'unknown';
 export type ReviewStatus = 'pending' | 'accepted' | 'rejected' | 'qualified';
 export type Actor = 'human' | 'agent' | 'system';
 
+export interface AgentConsentRequest {
+  kind: 'review_evidence' | 'finalize_blueprint' | 'export_private_evidence';
+  title: string;
+  summary: string;
+  affectedIds: string[];
+  privacyScope: 'public_only' | 'includes_private';
+  workspaceVersion: number;
+}
+
 export interface ProblemBrief {
   problemType: string;
   problemStatement: string;
@@ -82,6 +91,54 @@ export interface Source {
   extractionStatus: 'pending' | 'complete' | 'failed';
   providedExcerpt?: string;
   providedExcerptKind?: 'verbatim' | 'ai_web_synthesis';
+  provenance?: EvidenceProvenance;
+}
+
+export interface EvidenceProvenance {
+  origin: 'public_web' | 'user_provided' | 'connected_private' | 'first_party';
+  retrievedAt: string;
+  retrievalMethod: 'browser_agent' | 'authorized_connector' | 'paste' | 'upload' | 'system_research';
+  permissionScope?: 'public' | 'user_authorized';
+}
+
+export interface EvidenceBatchItem {
+  title: string;
+  sourceType: Source['sourceType'];
+  lane: SourceLane;
+  url?: string;
+  excerpt: string;
+  excerptKind?: Source['providedExcerptKind'];
+  private?: boolean;
+  synthetic?: boolean;
+  author?: string;
+  publisher?: string;
+  publishedAt?: string;
+  provenance: EvidenceProvenance;
+}
+
+export interface EvidencePolicy {
+  allowedSourceTypes?: Source['sourceType'][];
+  earliestPublishedAt?: string;
+  geography?: string;
+  minimumCorroboration: number;
+  includePrivate: boolean;
+}
+
+export interface EvidencePolicyComparison {
+  baselinePolicy: EvidencePolicy;
+  proposedPolicy: EvidencePolicy;
+  eligibleFindingIds: string[];
+  excludedFindingIds: string[];
+  baselineRanking: Array<{ candidateId: string; score: number; coverage: number }>;
+  proposedRanking: Array<{ candidateId: string; score: number; coverage: number }>;
+  recommendationChanged: boolean;
+}
+
+export interface EvidenceGapAction {
+  lane: SourceLane;
+  evidenceType: EvidenceType;
+  reason: string;
+  suggestedTool: 'ingest_evidence_batch' | 'search_sources';
 }
 
 export interface Citation {
@@ -266,6 +323,7 @@ export interface FoundryWorkspace {
   activity: ActivityEvent[];
   activeTool?: string;
   lastError?: { code: string; message: string };
+  activeEvidencePolicy?: EvidencePolicy;
 }
 
 export type ServiceSuccess<T> = {
@@ -273,10 +331,14 @@ export type ServiceSuccess<T> = {
   data: T;
   message: string;
   modifiedIds: string[];
+  workspaceVersion: number;
+  nextActions: string[];
 };
 
 export type ServiceFailure = {
   ok: false;
+  workspaceVersion: number;
+  nextActions: string[];
   error: {
     code: string;
     message: string;

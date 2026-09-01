@@ -37,4 +37,16 @@ describe('saveWorkspaceSnapshot', () => {
     const storage = { getItem: () => '{not-json' };
     expect(loadLocalWorkspace(storage)).toBeUndefined();
   });
+
+  it('does not restore a report saved by the obsolete research pipeline', () => {
+    const obsoleteWorkspace = createInitialWorkspace();
+    obsoleteWorkspace.stage = 'FINALIZED';
+    obsoleteWorkspace.problemBrief.problemStatement = 'hwo to find cheapest flight booking';
+    const values = new Map<string, string>([
+      ['launchpad.workspace.v2', JSON.stringify(obsoleteWorkspace)],
+    ]);
+    const storage = { getItem: (key: string) => values.get(key) ?? null };
+
+    expect(loadLocalWorkspace(storage)).toBeUndefined();
+  });
 });

@@ -1,0 +1,77 @@
+{
+  "status": "failed",
+  "model": "default",
+  "evaluatedAt": "2026-09-01T10:58:15.769Z",
+  "cases": [
+    {
+      "id": "direct-mission-start",
+      "stage": "EMPTY",
+      "passed": false,
+      "score": 0,
+      "calls": [],
+      "failedChecks": [
+        "Provider returned HTTP 429."
+      ]
+    },
+    {
+      "id": "ambiguous-live-context-ingestion",
+      "stage": "SOURCING",
+      "passed": false,
+      "score": 0,
+      "calls": [],
+      "failedChecks": [
+        "Provider returned HTTP 429."
+      ]
+    },
+    {
+      "id": "counterfactual-policy",
+      "stage": "CANDIDATES_READY",
+      "passed": false,
+      "score": 0,
+      "calls": [],
+      "failedChecks": [
+        "Provider returned HTTP 429."
+      ]
+    },
+    {
+      "id": "denied-consent-recovery",
+      "stage": "EVIDENCE_REVIEW",
+      "passed": false,
+      "score": 0,
+      "calls": [],
+      "failedChecks": [
+        "Provider returned HTTP 429."
+      ]
+    },
+    {
+      "id": "missing-counter-evidence",
+      "stage": "CANDIDATES_READY",
+      "passed": false,
+      "score": 0,
+      "calls": [],
+      "failedChecks": [
+        "Provider returned HTTP 429."
+      ]
+    },
+    {
+      "id": "stale-version-recovery",
+      "stage": "BLUEPRINT_READY",
+      "passed": false,
+      "score": 0,
+      "calls": [],
+      "failedChecks": [
+        "Provider returned HTTP 429."
+      ]
+    },
+    {
+      "id": "mid-chain-finalization-failure",
+      "stage": "BLUEPRINT_READY",
+      "passed": false,
+      "score": 0,
+      "calls": [],
+      "failedChecks": [
+        "Provider returned HTTP 429."
+      ]
+    }
+  ]
+}

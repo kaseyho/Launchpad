@@ -19,6 +19,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
   const [problemStatement, setProblemStatement] = useState(workspace.problemBrief.problemStatement);
   const [problemError, setProblemError] = useState('');
   const running = !['idle', 'complete', 'error'].includes(researchRun.phase);
+
   const retry = (value: string) => {
     const nextProblem = value.trim();
     if (nextProblem.length < 20) {
@@ -76,7 +77,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
       <span className="section-kicker">Autonomous research run</span>
       <h1>{researchRun.phase === 'complete' ? 'One solution. Every claim traceable.' : researchRun.phase === 'error' ? 'The research run paused.' : 'The factory is building your answer.'}</h1>
       <div className="run-problem">
-        <label htmlFor="launchpad-run-problem">Problem submitted <small>{running ? 'locked while the run is active' : 'editable before retry'}</small></label>
+        <label htmlFor="launchpad-run-problem">Interpreted problem <small>{running ? 'locked while the run is active' : 'editable before retry'}</small></label>
         <textarea
           id="launchpad-run-problem"
           value={problemStatement}
@@ -85,7 +86,7 @@ export function LaunchBrief({ workspace, researchRun, onStartResearch, onStop, o
           disabled={running}
           aria-describedby="launchpad-run-problem-help"
         />
-        <small id="launchpad-run-problem-help" className="run-problem-help">Change the brief, then save and retry. There is no maximum length.</small>
+        <small id="launchpad-run-problem-help" className="run-problem-help">LaunchPad corrects obvious spelling and grammar without changing your intended meaning. Change the brief, then save and retry.</small>
         {problemError && <p className="problem-entry-error" role="alert">{problemError}</p>}
       </div>
 

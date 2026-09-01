@@ -1,8 +1,8 @@
 import type { FoundryWorkspace } from '../domain/types';
 import { decodeWorkspaceSnapshot } from './workspace-snapshot';
+import { LOCAL_WORKSPACE_KEY } from './workspace-identity';
 
 type FetchWorkspace = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-const LOCAL_WORKSPACE_KEY = 'launchpad.workspace.v2';
 
 export function loadLocalWorkspace(storage: Pick<Storage, 'getItem'> | undefined = typeof localStorage === 'undefined' ? undefined : localStorage) {
   if (!storage) return undefined;

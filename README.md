@@ -2,7 +2,7 @@
 
 **Type one problem. Get one evidence-backed solution.**
 
-[Open the live public app](https://launchpad-nine-sand.vercel.app)
+[Open the live public app](https://launchpad.hello18528.chatgpt.site)
 
 LaunchPad is an autonomous research-to-solution web app built for the [WebMCP Challenge](https://webmcp.devpost.com/). The person does one thing: describes the problem. LaunchPad then uses server-side AI web research to investigate that exact request, preserves citation-linked limitations and counter-evidence, develops one problem-specific recommendation, stress-tests it, and presents the solution with the complete research ledger behind it.
 
@@ -31,47 +31,54 @@ The interactive voxel factory makes the run legible while it happens. The activi
 
 ## Why WebMCP matters
 
-WebMCP is LaunchPad’s optional browser-agent control and verification layer, not another step for the user.
+WebMCP turns the current page into a live evidence mission rather than a chat wrapper.
 
-- `research_and_ideate` starts the same complete problem-to-solution run exposed by the page.
-- Sixteen narrower tools let an agent inspect or operate the underlying brief, sources, findings, evidence gaps, candidates, lineage, stress test, and export.
-- Human actions and WebMCP actions use the same domain service, update the same visible page, and write to the same activity trail.
-- Read-only tools expose the final state and proof paths without mutating the result.
+- The agent reads the exact problem, stage, gaps, and recommendation already visible in the browser.
+- Browser-found evidence enters in one atomic, provenance-stamped batch with origin, retrieval time, and privacy scope.
+- Gap results name the evidence lane and action needed next.
+- Counterfactual policies show whether source type, recency, geography, corroboration, or private evidence changes the recommendation without deleting the ledger.
+- Read tools are genuinely pure. Sensitive evidence acceptance, finalization, and private export stop at a visible human-consent checkpoint bound to the current workspace version.
+- Every compact receipt reports the workspace version, modified IDs, recovery actions, and the next useful operations.
 
 WebMCP does not require an API key pasted into the site. In a supported browser, the page registers its tools with `document.modelContext`; the browser agent invokes the same server-side AI/web-research runner in the existing page session.
 
 ## Two-minute demo
 
-1. Type a problem and click **Research this problem**.
-2. Watch the factory move through planning, search, extraction, synthesis, ideation, and stress testing.
-3. Reveal the finished solution, its proof cards, limitations, assumptions, and next test.
-4. Open the research ledger and follow any finding to its original source.
-5. Expand **WebMCP details** to show the one-shot agent tool and the sixteen inspection/operation tools.
-6. Optionally ask a browser agent to call `research_and_ideate`, then inspect the activity log to prove the page changed through WebMCP.
+1. Enter a problem, connect a WebMCP browser agent, and copy the in-page judge mission.
+2. Watch the agent read live state, add browser-found evidence with provenance, and close a named evidence gap.
+3. Compare a stricter evidence policy and show the candidate ranking change on the same page.
+4. Approve the exact evidence IDs in the visible human-consent dialog.
+5. Trace one recommendation component to its source, preview finalization/export, and approve the sensitive commit.
+6. Read the version transitions and exact tool sequence from the rail and Activity log.
 
 ## WebMCP tool surface
 
 | Tool | Purpose |
 |---|---|
-| `research_and_ideate` | Runs the full visible research-to-solution workflow in one call |
+| `research_and_ideate` | Runs the full visible workflow, pausing for evidence-review and finalization consent |
 | `get_foundry_state` | Reads the active brief, stage, counts, warnings, and selected solution |
 | `update_problem_brief` | Updates the structured problem brief |
 | `plan_research` | Creates structured research questions |
 | `search_sources` | Searches a configured source lane |
-| `import_source` | Adds a source URL, excerpt, or connected-data result |
+| `import_source` | Adds one source URL, excerpt, or connected-data result |
+| `ingest_evidence_batch` | Atomically adds up to eight provenance- and privacy-stamped evidence records |
 | `extract_findings` | Creates traceable atomic findings |
-| `review_findings` | Accepts, rejects, or qualifies findings |
-| `get_evidence_gaps` | Returns quality-gate gaps and warnings |
+| `review_evidence_with_consent` | Pauses for human approval, then reviews exact finding IDs |
+| `get_evidence_gaps` | Returns gaps, warnings, and structured next actions |
+| `compare_evidence_policy` | Purely compares a counterfactual evidence policy and ranking |
+| `apply_evidence_policy` | Non-destructively applies a source/recency/geography/corroboration/privacy policy |
 | `synthesize_insights` | Clusters findings and contradictions |
 | `generate_idea_candidates` | Creates evidence-linked solution proposals |
 | `inspect_candidate` | Reads solution structure and evidence coverage |
 | `stress_test_candidate` | Applies counter-evidence and records risks |
-| `revise_candidate` | Revises a candidate while preserving lineage |
+| `revise_candidate` | Revises one candidate’s support without changing shared evidence judgments |
 | `trace_evidence` | Reads a complete solution-component-to-source path |
-| `finalize_blueprint` | Locks the evidence-gated solution blueprint |
-| `export_blueprint` | Produces Markdown or JSON output |
+| `preview_finalization` | Purely previews finalization gates and binds a workspace version |
+| `finalize_blueprint_with_consent` | Human-approved finalization commit |
+| `preview_export` | Purely previews public-safe or private-inclusive export |
+| `export_blueprint_with_consent` | Commits export; private evidence always requires human consent |
 
-All tool schemas reject undeclared fields. Read tools carry the `readOnlyHint` annotation. Write tools validate the current state, report side effects, and return actionable failures.
+Only stage-relevant tools are registered. Registration is asynchronous and abortable; readiness is shown only after every current tool succeeds. Schemas reject undeclared fields, pure reads carry `readOnlyHint`, evidence-returning tools carry `untrustedContentHint`, and output is capped at 1,500 characters.
 
 ## Research and evidence model
 
@@ -106,6 +113,14 @@ npx tsc --noEmit
 npm run lint
 npm run build
 ```
+
+Agent-selection evals:
+
+```bash
+npm run eval:webmcp
+```
+
+The dataset covers direct missions, ambiguous browser context, policy arguments, denied consent, missing counter-evidence, stale versions, and mid-chain recovery. With `SOCLAAS_API_KEY`, the runner gives the configured model the real stage-specific WebMCP definitions, records calls/arguments, and fails on selection or recovery errors. Without credentials it writes an explicit `skipped` report to `artifacts/demo/webmcp-agent-evals.json`; it never invents a pass or prints credentials/private evidence.
 
 ## Architecture
 

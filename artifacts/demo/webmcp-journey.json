@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "run_date": "2026-08-31",
+  "environment": {
+    "surface": "Codex in-app connected browser",
+    "origin": "http://localhost:3000/",
+    "page_defined_webmcp": true,
+    "browser_console_errors": 0
+  },
+  "workspace": {
+    "id": "workspace-demo",
+    "initial_version": 1,
+    "final_version": 14,
+    "final_stage": "FINALIZED",
+    "selected_candidate": {
+      "id": "candidate-a",
+      "name": "Shift Coach",
+      "coverage": 100,
+      "score": 92
+    },
+    "counts": {
+      "sources": 5,
+      "findings": 5,
+      "accepted_findings": 5,
+      "counter_signals": 1,
+      "private_sources": 0,
+      "unsupported_components": 0
+    }
+  },
+  "sequence": [
+    { "tool": "get_foundry_state", "from_version": 1, "to_version": 1, "pure_read": true },
+    { "tool": "update_problem_brief", "from_version": 1, "to_version": 2 },
+    { "tool": "plan_research", "from_version": 2, "to_version": 3 },
+    { "tool": "ingest_evidence_batch", "from_version": 3, "to_version": 4, "records": 5, "atomic": true },
+    { "tool": "extract_findings", "from_version": 4, "to_version": 5 },
+    { "tool": "get_evidence_gaps", "from_version": 5, "to_version": 5, "pure_read": true },
+    { "tool": "review_evidence_with_consent", "from_version": 5, "to_version": 6, "consent": "approved", "record_ids": ["finding-1m6m43m", "finding-1sdvkrz", "finding-g9xq6z", "finding-dy5jwl", "finding-1dvq1oy"] },
+    { "tool": "synthesize_insights", "from_version": 6, "to_version": 7 },
+    { "tool": "generate_idea_candidates", "from_version": 7, "to_version": 8, "records": 2 },
+    { "tool": "compare_evidence_policy", "from_version": 8, "to_version": 8, "pure_read": true, "counterfactual": true },
+    { "tool": "apply_evidence_policy", "from_version": 8, "to_version": 9, "policy": "strict" },
+    { "tool": "apply_evidence_policy", "from_version": 9, "to_version": 10, "policy": "rollback" },
+    { "tool": "trace_evidence", "from_version": 10, "to_version": 11, "component_path": "features.0", "visible_highlight": true },
+    { "tool": "stress_test_candidate", "from_version": 11, "to_version": 12, "counter_evidence_retained": true },
+    { "tool": "preview_finalization", "from_version": 12, "to_version": 12, "pure_read": true, "can_finalize": true },
+    { "tool": "finalize_blueprint_with_consent", "from_version": 12, "to_version": 13, "consent": "approved", "record_ids": ["candidate-a"] },
+    { "tool": "preview_export", "from_version": 13, "to_version": 13, "pure_read": true, "include_private": false },
+    { "tool": "export_blueprint_with_consent", "from_version": 13, "to_version": 14, "include_private": false, "filename": "proof-foundry-shift-coach.md" },
+    { "tool": "get_foundry_state", "from_version": 14, "to_version": 14, "pure_read": true }
+  ],
+  "visible_proof": {
+    "finalization_dialog": "Finalize this evidence-backed blueprint?",
+    "finalization_workspace_version": 12,
+    "finalization_privacy_scope": "Public only",
+    "activity_entries": 14,
+    "final_rail_receipt": "export_blueprint",
+    "final_rail_transition": "v13 -> v14",
+    "download_filename": "proof-foundry-shift-coach.md"
+  },
+  "regression_verification": {
+    "run_date": "2026-09-01",
+    "workspace_version_before": 14,
+    "workspace_version_after_pure_comparison": 14,
+    "workspace_version_after_public_export": 15,
+    "policy_delta_visible": "candidate-a -> candidate-a; 2 findings excluded; comparison only",
+    "policy_delta_cleared_after_version_change": true,
+    "invalid_policy_read": "INVALID_EVIDENCE_POLICY",
+    "invalid_policy_read_mutated_workspace": false,
+    "browser_console_errors": 0
+  },
+  "judging_host_preflight": {
+    "run_date": "2026-09-01",
+    "surface": "ChatGPT desktop in-app browser",
+    "origin": "https://launchpad.hello18528.chatgpt.site/",
+    "deployed_sites_version": 10,
+    "tools_discovered": 17,
+    "tool_called": "get_foundry_state",
+    "workspace_version_before": 1,
+    "workspace_version_after": 2,
+    "visible_agent_state": "Browser agent: Connected",
+    "visible_tool_state": "get_foundry_state: Complete",
+    "result": "PASS_WITH_EXPECTED_LEGACY_DEFECT",
+    "legacy_defect": "The version-10 read-only tool recorded Activity and advanced the page version; the saved version-11 release candidate contains the non-mutating read fix."
+  },
+  "production_judging_host_e2e": {
+    "run_date": "2026-09-01",
+    "surface": "ChatGPT desktop in-app browser",
+    "origin": "https://launchpad.hello18528.chatgpt.site/",
+    "deployed_sites_version": 12,
+    "page_defined_tool_catalog_size": 22,
+    "workspace": {
+      "initial_version": 1,
+      "final_version": 19,
+      "final_stage": "FINALIZED",
+      "selected_candidate": {
+        "id": "candidate-a",
+        "name": "Admin Guild",
+        "coverage": 100,
+        "score": 98
+      },
+      "counts": {
+        "sources": 9,
+        "findings": 9,
+        "accepted_findings": 9,
+        "candidates": 3,
+        "private_sources": 2
+      }
+    },
+    "sequence": [
+      { "tool": "get_foundry_state", "from_version": 1, "to_version": 1, "pure_read": true },
+      { "tool": "get_foundry_state", "from_version": 1, "to_version": 1, "pure_read": true },
+      { "tool": "update_problem_brief", "from_version": 1, "to_version": 2 },
+      { "tool": "plan_research", "from_version": 2, "to_version": 3 },
+      { "tool": "search_sources", "lane": "first_party", "from_version": 3, "to_version": 4 },
+      { "tool": "search_sources", "lane": "customer", "from_version": 4, "to_version": 5 },
+      { "tool": "search_sources", "lane": "academic", "from_version": 5, "to_version": 6 },
+      { "tool": "search_sources", "lane": "market", "from_version": 6, "to_version": 7 },
+      { "tool": "search_sources", "lane": "community", "from_version": 7, "to_version": 8 },
+      { "tool": "search_sources", "lane": "counter", "from_version": 8, "to_version": 9 },
+      { "tool": "extract_findings", "from_version": 9, "to_version": 10, "records": 9 },
+      { "tool": "review_evidence_with_consent", "from_version": 10, "to_version": 11, "consent": "approved", "records": 9 },
+      { "tool": "synthesize_insights", "from_version": 11, "to_version": 12, "records": 5 },
+      { "tool": "generate_idea_candidates", "from_version": 12, "to_version": 13, "records": 3 },
+      { "tool": "compare_evidence_policy", "from_version": 13, "to_version": 13, "pure_read": true, "excluded_findings": 4 },
+      { "tool": "get_foundry_state", "from_version": 13, "to_version": 13, "pure_read": true },
+      { "tool": "apply_evidence_policy", "from_version": 13, "to_version": 14, "policy": "papers_and_reports_only" },
+      { "tool": "apply_evidence_policy", "from_version": 14, "to_version": 15, "policy": "rollback" },
+      { "tool": "inspect_candidate", "from_version": 15, "to_version": 15, "pure_read": true, "candidate_id": "candidate-a" },
+      { "tool": "stress_test_candidate", "from_version": 15, "to_version": 16, "candidate_id": "candidate-a" },
+      { "tool": "trace_evidence", "from_version": 16, "to_version": 17, "candidate_id": "candidate-a", "component_path": "mechanism" },
+      { "tool": "preview_finalization", "from_version": 17, "to_version": 17, "pure_read": true, "can_finalize": true },
+      { "tool": "finalize_blueprint_with_consent", "from_version": 17, "to_version": 18, "consent": "approved", "candidate_id": "candidate-a" },
+      { "tool": "get_foundry_state", "from_version": 18, "to_version": 18, "pure_read": true },
+      { "tool": "preview_export", "from_version": 18, "to_version": 18, "pure_read": true, "include_private": false },
+      { "tool": "export_blueprint_with_consent", "from_version": 18, "to_version": 19, "include_private": false, "filename": "proof-foundry-admin-guild.md" }
+    ],
+    "visible_proof": {
+      "evidence_consent_workspace_version": 10,
+      "evidence_consent_privacy_scope": "Includes private evidence",
+      "finalization_workspace_version": 17,
+      "policy_comparison": "candidate-a remained leader; 4 findings excluded; comparison only",
+      "trace_path": ["idea_component", "insight", "finding", "source"],
+      "quantified_finding": "43% of 420 new-administrator sessions ended at the integration step before first value",
+      "supporting_findings": 8,
+      "counter_findings": 1,
+      "activity_entries": 19,
+      "final_rail_receipt": "export_blueprint",
+      "final_rail_transition": "v18 -> v19"
+    },
+    "result": "PASS",
+    "final_release_verification": {
+      "deployed_sites_version": 13,
+      "workspace_version": 19,
+      "workspace_stage": "FINALIZED",
+      "completed_heading_visible": true,
+      "stale_paused_heading_visible": false,
+      "privacy_boolean_schema_guidance_visible": true,
+      "browser_console_errors": 0,
+      "result": "PASS"
+    }
+  },
+  "external_gates": [
+    {
+      "gate": "provider_backed_agent_eval",
+      "status": "RATE_LIMITED",
+      "reason": "The configured provider key was loaded and exercised. Four cases passed in the most complete live run before the provider began returning HTTP 429; subsequent reruns were rate-limited before the first case. No passing result was fabricated."
+    },
+    {
+      "gate": "submission_judging_host_e2e",
+      "status": "PASSED",
+      "reason": "The complete 26-call journey passed against public Sites version 12 in the ChatGPT desktop in-app browser; the corrected final Sites version 13 then passed a finalized-state, schema-guidance, persistence, and zero-console-error smoke check."
+    }
+  ]
+}

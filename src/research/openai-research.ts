@@ -13,6 +13,7 @@ interface ProviderResearchOptions {
 export interface GroundedResearchClarification {
   status: 'needs_clarification';
   questions: string[];
+  normalized_problem: string;
 }
 
 type ProviderResponse = {
@@ -24,10 +25,11 @@ type ProviderResponse = {
 const REPORT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['status', 'questions', 'target_audience', 'desired_outcome', 'recommendation', 'sources'],
+  required: ['status', 'questions', 'normalized_problem', 'target_audience', 'desired_outcome', 'recommendation', 'sources'],
   properties: {
     status: { type: 'string', enum: ['complete', 'needs_clarification'] },
     questions: { type: 'array', items: { type: 'string' } },
+    normalized_problem: { type: 'string' },
     target_audience: { type: 'string' },
     desired_outcome: { type: 'string' },
     recommendation: {
@@ -80,6 +82,8 @@ const REPORT_SCHEMA = {
 
 const RESEARCH_INSTRUCTIONS = `You are LaunchPad's grounded research agent. Answer the user's actual request, not a nearby academic topic and never a generic product template.
 
+Before researching, rewrite the request as normalized_problem in clear grammatical English. Correct only obvious spelling, transposition, capitalization, and punctuation errors. Preserve the user's intended meaning, proper nouns, route or product codes, numbers, dates, locations, constraints, and level of specificity. Use normalized_problem—not a literal typo fragment—as the subject of every search and recommendation. If two or more materially different interpretations are plausible, do not guess: return status "needs_clarification" and ask a concise question.
+
 You must use web search before completing a report. Search broadly enough to compare current authoritative guidance, reputable market or product information, relevant community experience when useful, and at least one credible limitation or counter-signal. Prefer primary and authoritative sources. Do not invent sources, URLs, dates, findings, or quotes.
 
 Classify the request first:
@@ -94,7 +98,7 @@ For a complete report:
 - Never recommend an abstract "pilot", "intervention", "loop", or "test" unless the user's problem genuinely asks for a product experiment.
 - Treat time-sensitive prices as time-sensitive and never claim a current cheapest option without the inputs and live evidence required to compare it.
 
-For clarification, leave the report strings and arrays empty except for status and questions.`;
+For clarification, keep normalized_problem as a minimal safe cleanup of the original request, and leave the other report strings and arrays empty except for status and questions.`;
 
 function outputText(response: ProviderResponse) {
   for (const item of response.output ?? []) {
@@ -154,12 +158,19 @@ function nonEmpty(value: unknown, minimum = 1): value is string {
 function validateReport(value: unknown, allowedUrls: Set<string>): GroundedResearchReport | GroundedResearchClarification {
   if (!value || typeof value !== 'object') throw new Error('The AI research service returned an invalid report.');
   const report = value as Record<string, unknown>;
+  if (!nonEmpty(report.normalized_problem, 8)) {
+    throw new Error('The AI research service did not return a usable interpretation of the problem.');
+  }
   if (!Array.isArray(report.questions) || report.questions.some((question) => !nonEmpty(question))) {
     throw new Error('The AI research service returned invalid clarification questions.');
   }
   if (report.status === 'needs_clarification') {
     if (report.questions.length === 0) throw new Error('The AI research service requested clarification without asking a question.');
-    return { status: 'needs_clarification', questions: report.questions as string[] };
+    return {
+      status: 'needs_clarification',
+      questions: report.questions as string[],
+      normalized_problem: report.normalized_problem as string,
+    };
   }
   if (report.status !== 'complete' || !nonEmpty(report.target_audience, 8) || !nonEmpty(report.desired_outcome, 12)) {
     throw new Error('The AI research service returned an invalid report.');
@@ -221,7 +232,7 @@ export async function researchWithProvider(
     body: JSON.stringify({
       model,
       instructions: RESEARCH_INSTRUCTIONS,
-      input: `Research and answer this request:\n\n${problem.trim()}`,
+      input: `First correct obvious spelling and grammar without changing the intended meaning. Then research and answer this request:\n\n${problem.trim()}`,
       tools: [{ type: 'web_search' }],
       tool_choice: { type: 'web_search' },
       include: ['web_search_call.action.sources', 'web_search_call.results'],

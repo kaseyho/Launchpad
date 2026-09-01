@@ -9,6 +9,7 @@ import { LaunchBrief } from './launch-brief';
 import { ResearchFindings } from './research-findings';
 import { SubscriptionDemo } from './subscription-demo';
 import { WebMCPRunRail } from './webmcp-run-rail';
+import { AgentConsentDialog } from './agent-consent-dialog';
 import { useFoundry } from '../hooks/use-foundry';
 import { useSubscription } from '../hooks/use-subscription';
 import { useWebMCP } from '../hooks/use-webmcp';
@@ -44,7 +45,7 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
   const activityButtonRef = useRef<HTMLButtonElement>(null);
   const subscriptionButtonRef = useRef<HTMLButtonElement>(null);
   const { workspace } = foundry;
-  const webmcp = useWebMCP(foundry.service, foundry.acceptAgentTrace, foundry.acceptAgentExport, foundry.startResearch);
+  const webmcp = useWebMCP(foundry.service, foundry.acceptAgentTrace, foundry.acceptAgentExport, foundry.startResearch, workspace.stage, workspace.version);
   const progress = getStageProgress(workspace.stage);
 
   const closeActivity = useCallback(() => {
@@ -98,6 +99,7 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
 
       <section className="launch-workspace" id="launch-workspace">
         <LaunchBrief
+          key={workspace.problemBrief.problemStatement}
           workspace={workspace}
           researchRun={foundry.researchRun}
           onStartResearch={foundry.startResearch}
@@ -111,7 +113,16 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
         />
         <div className="launch-visual">
           <InteractiveFactory workspace={workspace} researchRun={foundry.researchRun} />
-          <WebMCPRunRail workspace={workspace} ready={webmcp.ready} toolCount={webmcp.toolCount} researchRun={foundry.researchRun} />
+          <WebMCPRunRail
+            workspace={workspace}
+            ready={webmcp.ready}
+            toolCount={webmcp.toolCount}
+            toolNames={webmcp.toolNames}
+            researchRun={foundry.researchRun}
+            error={webmcp.error}
+            pendingConsent={webmcp.pendingConsent}
+            policyComparison={webmcp.policyComparison}
+          />
         </div>
       </section>
 
@@ -146,6 +157,13 @@ export function FactoryShell({ initialWorkspace }: { initialWorkspace?: FoundryW
         onClose={() => setInspectorOpen(false)}
         onReview={(findingId, decision) => foundry.report(foundry.service.reviewFindings({ findingIds: [findingId], decision }))}
       />
+      {webmcp.pendingConsent && (
+        <AgentConsentDialog
+          request={webmcp.pendingConsent}
+          onApprove={webmcp.approveConsent}
+          onDecline={webmcp.declineConsent}
+        />
+      )}
     </main>
   );
 }
