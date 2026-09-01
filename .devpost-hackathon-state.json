@@ -23,7 +23,8 @@
     "start-hackathon",
     "review",
     "resources",
-    "prepare-submission"
+    "prepare-submission",
+    "submit-project"
   ],
   "rules_acknowledged": true,
   "learning": {
@@ -35,7 +36,9 @@
   },
   "submission": {
     "draft_file": "devpost-submission.md",
-    "status": "ready"
+    "status": "submitted",
+    "confirmation_id": 1165676,
+    "url": "https://devpost.com/software/launchpad-dzomub"
   },
-  "next_command": "submit-project"
+  "next_command": "hackathon-map"
 }

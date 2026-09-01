@@ -166,6 +166,8 @@ For the shortest judging path, use this mission:
 
 ## Submission readiness
 
+Verified live on Devpost: submission `1165676` was recorded for The WebMCP Challenge at `2026-09-01T12:11:54.099-04:00`.
+
 - [x] Registered for The WebMCP Challenge
 - [x] Live public judging URL
 - [x] Public repository reachable
@@ -179,4 +181,4 @@ For the shortest judging path, use this mission:
 - [x] Final narrated 2:06 demo rendered and visually checked
 - [x] Final judge-layout polish and demo evidence pushed to the public branch
 - [x] YouTube demo published publicly; checks passed with no copyright issues
-- [ ] Final submission confirmed and verified
+- [x] Final submission confirmed and verified live on Devpost
