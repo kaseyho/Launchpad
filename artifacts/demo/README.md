@@ -12,7 +12,7 @@
 
 `youtube-upload.md` contains the final title, public description, chapters, and upload settings so the host upload can be completed without rewriting the submission story.
 
-The uploaded YouTube asset is `https://youtu.be/U3tsnlD0J_s`. YouTube accepted the file and completed its copyright checks with no issues; the video remains private until the explicit public-publish confirmation.
+The public YouTube demo is `https://youtu.be/U3tsnlD0J_s`. YouTube accepted the file, completed its copyright checks with no issues, and confirmed publication on September 2, 2026.
 
 ## Connected-browser WebMCP evidence
 
