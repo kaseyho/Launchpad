@@ -12,6 +12,8 @@
 
 `youtube-upload.md` contains the final title, public description, chapters, and upload settings so the host upload can be completed without rewriting the submission story.
 
+The uploaded YouTube asset is `https://youtu.be/U3tsnlD0J_s`. YouTube accepted the file and completed its copyright checks with no issues; the video remains private until the explicit public-publish confirmation.
+
 ## Connected-browser WebMCP evidence
 
 `webmcp-journey.json` records both the original local run and the final public judging-host run. The production run used the ChatGPT desktop in-app browser against `https://launchpad.hello18528.chatgpt.site/`, discovered the 22-tool stage-aware catalog, and exercised 26 exact calls from workspace v1 through v19. It proved non-mutating reads, visible version receipts, a human evidence-consent checkpoint, policy comparison/apply/rollback, a four-hop proof trace, finalization consent, and a public-safe Markdown export. The final Sites version 17 then passed a reload smoke check with the finalized workspace intact, the completed run panel visible, the polished in-flow judge mission and non-overlapping rail present, and zero browser console errors.
