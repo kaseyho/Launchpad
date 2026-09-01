@@ -1,18 +1,18 @@
-# ProofFoundry demo video
+# LaunchPad WebMCP demo
 
-`ProofFoundry-demo.mp4` is a 1 minute 49 second narrated walkthrough of the deployed WebMCP workflow.
+`LaunchPad-WebMCP-demo.mp4` is a 2 minute 6 second narrated walkthrough of the final deployed WebMCP workflow.
 
-- Resolution: 1920 × 1080
+- Resolution: 1280 × 720
 - Video: H.264
-- Audio: stereo AAC, 48 kHz
-- Captured from: https://proof-foundry.hello18528.chatgpt.site
-- Sequence: connected workspace → source lanes → citation inspection → initial candidate → evidence-driven recommendation switch → final proof trace
+- Audio: mono AAC, 22.05 kHz
+- Captured from: https://launchpad.hello18528.chatgpt.site
+- Sequence: finalized workspace → judge mission → versioned WebMCP activity → Admin Guild solution → four-hop proof trace → public-safe export
 
-The video is ready for upload to the public video host used by the Devpost submission.
+`LaunchPad-WebMCP-demo-contact-sheet.jpg` provides a visual QA overview of the complete video. The video is ready for upload to the public YouTube host required by the Devpost submission.
 
 ## Connected-browser WebMCP evidence
 
-`webmcp-journey.json` records both the original local run and the final public judging-host run. The production run used the ChatGPT desktop in-app browser against `https://launchpad.hello18528.chatgpt.site/`, discovered the 22-tool stage-aware catalog, and exercised 26 exact calls from workspace v1 through v19. It proved non-mutating reads, visible version receipts, a human evidence-consent checkpoint, policy comparison/apply/rollback, a four-hop proof trace, finalization consent, and a public-safe Markdown export. The corrected final Sites version 13 then passed a reload smoke check with the finalized workspace intact, the completed run panel visible, the privacy schema clarification present, and zero browser console errors.
+`webmcp-journey.json` records both the original local run and the final public judging-host run. The production run used the ChatGPT desktop in-app browser against `https://launchpad.hello18528.chatgpt.site/`, discovered the 22-tool stage-aware catalog, and exercised 26 exact calls from workspace v1 through v19. It proved non-mutating reads, visible version receipts, a human evidence-consent checkpoint, policy comparison/apply/rollback, a four-hop proof trace, finalization consent, and a public-safe Markdown export. The final Sites version 17 then passed a reload smoke check with the finalized workspace intact, the completed run panel visible, the polished in-flow judge mission and non-overlapping rail present, and zero browser console errors.
 
 The Activity dialog visibly recorded every mutating step and final file name. The final rail receipt was `export_blueprint`, `v18 → v19`, and the browser console contained no errors.
 

@@ -6,7 +6,8 @@
 - **Tagline:** An evidence factory where browser agents research, challenge, and trace one defensible solution while humans retain control of sensitive decisions.
 - **Live app:** https://launchpad.hello18528.chatgpt.site
 - **Public repository:** https://github.com/kaseyho/Launchpad/tree/codex/prooffoundry-p0
-- **Demo video:** Pending public YouTube/Vimeo upload of `artifacts/demo/ProofFoundry-demo.mp4`
+- **Demo video:** Pending public YouTube upload of `artifacts/demo/LaunchPad-WebMCP-demo.mp4` (2:06, narrated, H.264/AAC)
+- **Devpost project:** https://devpost.com/software/launchpad-dzomub
 - **Built with:** WebMCP, TypeScript, React, Next.js, Vinext, Cloudflare Workers, Cloudflare D1, Cloudflare R2, ChatGPT Sites, Three.js, OpenAI-compatible Responses API
 
 ## Short summary
@@ -173,7 +174,9 @@ For the shortest judging path, use this mission:
 - [x] Required form answers drafted
 - [x] Final production WebMCP journey recorded
 - [x] Automated tests, lint, type-check, and build passed
-- [ ] Current WebMCP work pushed to the public branch
+- [x] Core WebMCP implementation pushed to the public branch
+- [x] Devpost project created and synchronized with the draft
+- [x] Final narrated 2:06 demo rendered and visually checked
+- [ ] Final judge-layout polish and demo evidence pushed to the public branch
 - [ ] Demo uploaded publicly to YouTube or Vimeo
-- [ ] Devpost project created/updated
 - [ ] Final submission confirmed and verified

@@ -220,16 +220,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .interactive-factory[data-production='error'] .factory-production-now > div:first-child i, .interactive-factory[data-production='error'] .factory-production-track span { background: var(--coral); }
 
 .webmcp-dock { position: relative; width: min(860px, 98%); justify-self: center; border: 2px solid var(--line); background: var(--ink-soft); box-shadow: 6px 6px 0 rgba(83,120,206,.18); }
-.webmcp-dock-main { min-height: 58px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(14px, 2.4vw, 30px); padding: 10px 12px; }
+.webmcp-dock-main { min-height: 58px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 10px 12px; }
 .webmcp-status { min-width: max-content; }
 .webmcp-status > div { display: grid; gap: 4px; }
 .webmcp-status small { color: var(--muted); font: 550 10px/1 var(--font-geist-mono), monospace; letter-spacing: .08em; }
 .webmcp-status strong { color: inherit; font: 650 10px/1 var(--font-geist-mono), monospace; }
-.webmcp-flow { min-width: 0; display: flex; align-items: center; justify-content: center; gap: clamp(6px, 1.2vw, 12px); color: var(--muted); font: 570 10px/1.2 var(--font-geist-mono), monospace; }
+.webmcp-flow { min-width: 0; grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: clamp(6px, 1.2vw, 12px); padding: 9px 0 2px; border-top: 1px solid rgba(238,233,250,.08); color: var(--muted); font: 570 10px/1.2 var(--font-geist-mono), monospace; }
 .webmcp-flow span, .webmcp-flow strong { white-space: nowrap; }
 .webmcp-flow i { color: var(--coral); font-style: normal; }
 .webmcp-flow strong { color: var(--paper); font-family: var(--font-geist-mono), monospace; font-weight: 750; }
-.webmcp-dock-actions { display: flex; align-items: center; gap: 6px; }
+.webmcp-dock-actions { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 6px; }
 .webmcp-dock-actions button { white-space: nowrap; border: 2px solid transparent; border-radius: 0; background: transparent; padding: 8px 9px; cursor: pointer; font: 650 10px/1 var(--font-geist-mono), monospace; text-transform: uppercase; }
 .webmcp-copy { border-color: var(--paper) !important; background: var(--paper) !important; color: var(--paper-ink); box-shadow: 3px 3px 0 var(--coral); }
 .webmcp-copy:hover { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--coral); }
@@ -245,11 +245,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .webmcp-policy-delta span, .webmcp-policy-delta small { color: var(--muted); font: 550 10px/1.3 var(--font-geist-mono), monospace; text-transform: uppercase; letter-spacing: .05em; }
 .webmcp-policy-delta strong { min-width: 0; overflow: hidden; color: var(--paper); font: 600 11px/1.3 var(--font-geist-mono), monospace; text-overflow: ellipsis; white-space: nowrap; }
 .copy-feedback { min-width: 62px; color: var(--mint); text-align: right; }
-.webmcp-explanation { position: absolute; z-index: 8; left: -2px; right: -2px; top: calc(100% + 2px); padding: 16px; background: var(--ink-soft); border: 2px solid var(--violet-bright); box-shadow: 7px 7px 0 var(--violet); display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
-.webmcp-explanation > div { display: grid; grid-template-columns: auto 1fr; gap: 6px 9px; align-items: baseline; }
+/* Keep the judge mission in flow so the following report cannot cover it. */
+.webmcp-explanation { position: relative; z-index: 1; margin: 2px -2px -2px; padding: 16px; background: var(--ink-soft); border: 2px solid var(--violet-bright); box-shadow: 7px 7px 0 var(--violet); display: grid; grid-template-columns: minmax(0,1.6fr) minmax(260px,1fr); gap: 18px; }
+.webmcp-explanation > div { display: grid; grid-template-columns: 1fr; gap: 9px; align-content: start; }
 .webmcp-explanation span { color: var(--violet-bright); font: 650 10px/1 var(--font-geist-mono), monospace; }
 .webmcp-explanation strong { font-size: 12px; }
-.webmcp-explanation p { grid-column: 2; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.webmcp-explanation p { grid-column: 1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.webmcp-mission-copy button { width: fit-content; }
+.webmcp-active-tools p { display: flex; flex-wrap: wrap; gap: 6px; }
+.webmcp-active-tools code { border: 1px solid var(--line); padding: 5px 6px; color: var(--paper); font: 550 9px/1.2 var(--font-geist-mono), monospace; overflow-wrap: anywhere; }
 .webmcp-explanation .webmcp-distinction { grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid var(--line); color: #c9c4d0; font: 550 10px/1.45 var(--font-geist-mono), monospace; }
 .webmcp-distinction strong { color: var(--mint); text-transform: uppercase; }
 
