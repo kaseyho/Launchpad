@@ -9,11 +9,11 @@
 - Composition: product demo stretched to the founder-pitch duration → facecam picture-in-picture in the top-right corner → LaunchPad lime border → original demo audio removed
 - Sequence: business problem → decision-intelligence product → evidence policies and traceability → economic value → WebMCP advantage → market vision
 
-`LaunchPad-WebMCP-founder-demo-contact-sheet.jpg` provides a six-point visual QA overview of the final composite. The prior `LaunchPad-WebMCP-demo.mp4` remains as the reproducible product-only source.
+`LaunchPad-WebMCP-founder-demo-contact-sheet.jpg` provides a six-point visual QA overview of the final composite. `LaunchPad-WebMCP-founder-demo-thumbnail.jpg` preserves the intended 1280 × 720 promotional frame. The prior `LaunchPad-WebMCP-demo.mp4` remains as the reproducible product-only source.
 
 `youtube-upload.md` contains the final title, public description, chapters, and upload settings so the host upload can be completed without rewriting the submission story.
 
-The previous public YouTube demo is `https://youtu.be/U3tsnlD0J_s`. It will be replaced in the Devpost entry after the founder-led video is uploaded, published, and verified.
+The founder-led demo is publicly available at `https://youtu.be/WI_mK-9C7m4`. YouTube completed processing and copyright checks with no issues before publication. The previous product-only demo remains available at `https://youtu.be/U3tsnlD0J_s` as historical evidence.
 
 ## Connected-browser WebMCP evidence
 

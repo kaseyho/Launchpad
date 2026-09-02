@@ -35,6 +35,7 @@ Built for The WebMCP Challenge.
 
 ## Upload settings
 
+- Public URL: https://youtu.be/WI_mK-9C7m4
 - Audience: No, it is not made for kids
 - Paid promotion: No
 - Altered or synthetic content disclosure: No realistic altered person, place, scene, or event is depicted
@@ -47,3 +48,7 @@ Built for The WebMCP Challenge.
 ## Upload asset
 
 `/Users/kc/Work/Launchpad/artifacts/demo/LaunchPad-WebMCP-founder-demo.mp4`
+
+## Upload result
+
+Published publicly on September 2, 2026. YouTube processing completed and reported no copyright issues. The custom-thumbnail upload was unavailable because the channel has not completed phone verification, so the public video uses an automatically generated frame.

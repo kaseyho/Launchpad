@@ -6,7 +6,7 @@
 - **Tagline:** An evidence factory where browser agents research, challenge, and trace one defensible solution while humans retain control of sensitive decisions.
 - **Live app:** https://launchpad.hello18528.chatgpt.site
 - **Public repository:** https://github.com/kaseyho/Launchpad/tree/codex/prooffoundry-p0
-- **Demo video:** https://youtu.be/U3tsnlD0J_s — public, 2:07, narrated; YouTube checks passed with no copyright issues
+- **Demo video:** https://youtu.be/WI_mK-9C7m4 — public, 2:38, founder-led; facecam audio replaces the original narration and YouTube checks passed with no copyright issues
 - **Devpost project:** https://devpost.com/software/launchpad-dzomub
 - **Built with:** WebMCP, TypeScript, React, Next.js, Vinext, Cloudflare Workers, Cloudflare D1, Cloudflare R2, ChatGPT Sites, Three.js, OpenAI-compatible Responses API
 
@@ -166,7 +166,7 @@ For the shortest judging path, use this mission:
 
 ## Submission readiness
 
-Verified live on Devpost: submission `1165676` was recorded for The WebMCP Challenge at `2026-09-01T12:11:54.099-04:00`.
+Verified live on Devpost: submission `1165676` remains submitted to The WebMCP Challenge, and the live project was updated on `2026-09-02T00:04:00.535-04:00` with the founder-led public video.
 
 - [x] Registered for The WebMCP Challenge
 - [x] Live public judging URL
@@ -178,7 +178,7 @@ Verified live on Devpost: submission `1165676` was recorded for The WebMCP Chall
 - [x] Automated tests, lint, type-check, and build passed
 - [x] Core WebMCP implementation pushed to the public branch
 - [x] Devpost project created and synchronized with the draft
-- [x] Final narrated 2:06 demo rendered and visually checked
+- [x] Final founder-led 2:37 demo rendered, decoded, and visually checked
 - [x] Final judge-layout polish and demo evidence pushed to the public branch
-- [x] YouTube demo published publicly; checks passed with no copyright issues
+- [x] Founder-led YouTube demo published publicly; processing and copyright checks passed
 - [x] Final submission confirmed and verified live on Devpost
