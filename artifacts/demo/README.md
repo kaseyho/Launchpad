@@ -1,18 +1,19 @@
 # LaunchPad WebMCP demo
 
-`LaunchPad-WebMCP-demo.mp4` is a 2 minute 6 second narrated walkthrough of the final deployed WebMCP workflow.
+`LaunchPad-WebMCP-founder-demo.mp4` is the final 2 minute 37 second founder-led business pitch and product walkthrough. It replaces the original synthetic narration with Kei's facecam recording and microphone audio while retaining the verified product demo as full-screen evidence.
 
 - Resolution: 1280 × 720
 - Video: H.264
-- Audio: mono AAC, 22.05 kHz
+- Audio: normalized mono AAC, 48 kHz; facecam recording only
 - Captured from: https://launchpad.hello18528.chatgpt.site
-- Sequence: finalized workspace → judge mission → versioned WebMCP activity → Admin Guild solution → four-hop proof trace → public-safe export
+- Composition: product demo stretched to the founder-pitch duration → facecam picture-in-picture in the top-right corner → LaunchPad lime border → original demo audio removed
+- Sequence: business problem → decision-intelligence product → evidence policies and traceability → economic value → WebMCP advantage → market vision
 
-`LaunchPad-WebMCP-demo-contact-sheet.jpg` provides a visual QA overview of the complete video. The video is ready for upload to the public YouTube host required by the Devpost submission.
+`LaunchPad-WebMCP-founder-demo-contact-sheet.jpg` provides a six-point visual QA overview of the final composite. The prior `LaunchPad-WebMCP-demo.mp4` remains as the reproducible product-only source.
 
 `youtube-upload.md` contains the final title, public description, chapters, and upload settings so the host upload can be completed without rewriting the submission story.
 
-The public YouTube demo is `https://youtu.be/U3tsnlD0J_s`. YouTube accepted the file, completed its copyright checks with no issues, and confirmed publication on September 2, 2026.
+The previous public YouTube demo is `https://youtu.be/U3tsnlD0J_s`. It will be replaced in the Devpost entry after the founder-led video is uploaded, published, and verified.
 
 ## Connected-browser WebMCP evidence
 

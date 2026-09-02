@@ -2,13 +2,17 @@
 
 ## Title
 
-LaunchPad — A WebMCP Agent That Proves Every Decision
+LaunchPad — The Trust Layer for AI Business Decisions | WebMCP
 
 ## Description
 
-LaunchPad turns one messy product problem into one evidence-backed, auditable solution. A browser agent works inside the same live workspace as the human: it discovers missing evidence, researches across evidence lanes, preserves counter-signals, compares stricter evidence policies, and proves each recommended component back to its source.
+AI can give teams answers. LaunchPad gives them decisions they can defend.
 
-This two-minute demo shows the final public build completing a 26-call WebMCP journey from workspace version 1 to version 19. The agent uses a stage-aware catalog of 22 tools, produces compact versioned receipts, pauses for human consent at consequential decisions, and exports a public-safe blueprint without leaking private evidence.
+In this founder-led pitch, Kei Ching Ho introduces LaunchPad: a decision-intelligence workspace for product, research, and strategy teams. The agent works inside the same live workspace as the human, finds evidence gaps, preserves counter-signals, compares evidence policies, and traces every recommendation back to its source.
+
+The business value is decision velocity without reckless automation: less time stitching research together, less rework when assumptions are challenged, and more confidence before teams commit money, engineering time, and reputation.
+
+The product footage shows the verified public build and its exact WebMCP activity. The production journey completed 26 calls from workspace version 1 to version 19, including policy comparison and rollback, human consent, a four-hop proof trace, and public-safe export.
 
 Live app: https://launchpad.hello18528.chatgpt.site
 
@@ -18,12 +22,12 @@ Devpost project: https://devpost.com/software/launchpad-dzomub
 
 Chapters:
 
-00:00 Final live WebMCP workspace
-00:17 Judge mission and stage-aware tools
-00:39 Versioned 26-call activity trail
-01:01 Evidence-backed Admin Guild solution
-01:27 Four-hop proof lineage
-01:51 Public-safe export and the WebMCP difference
+00:00 Why AI answers still fail business teams
+00:44 LaunchPad as decision intelligence
+01:04 Evidence gaps, policies, and traceability
+01:44 The business value
+02:04 Why WebMCP makes the collaboration real
+02:18 Market and long-term vision
 
 Built for The WebMCP Challenge.
 
@@ -42,4 +46,4 @@ Built for The WebMCP Challenge.
 
 ## Upload asset
 
-`/Users/kc/Work/Launchpad/artifacts/demo/LaunchPad-WebMCP-demo.mp4`
+`/Users/kc/Work/Launchpad/artifacts/demo/LaunchPad-WebMCP-founder-demo.mp4`
